@@ -40,7 +40,14 @@ function getSearchConfigs(selected) {
         configs.push({ type: 'keyword', value: '양식' });
         break;
       case 'cafe':
+        // 카페
         configs.push({ type: 'category', value: 'CE7' });
+
+        // 간식 키워드들
+        configs.push({ type: 'keyword', value: '디저트' });
+        configs.push({ type: 'keyword', value: '베이커리' });
+        configs.push({ type: 'keyword', value: '간식' });
+        configs.push({ type: 'keyword', value: '빵집' });
         break;
       case 'bar':
         configs.push({ type: 'keyword', value: '술집' });
