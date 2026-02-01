@@ -38,9 +38,51 @@
   
   <div class="container">
     <h2>🍱Lunch Buddy</h2>
-      <button id="actionButton" onclick="getMyLocation()">
-          내 위치로 음식점 찾기
-      </button>
+      <!-- 유형 선택 영역 -->
+<section class="category-section">
+  <h2>어떤 식당을 찾을까요?</h2>
+
+  <div class="category-list">
+    <label class="category-item">
+      <input type="checkbox" value="all" checked>
+      <span>전체</span>
+    </label>
+
+    <label class="category-item">
+      <input type="checkbox" value="korean">
+      <span>한식</span>
+    </label>
+
+    <label class="category-item">
+      <input type="checkbox" value="chinese">
+      <span>중식</span>
+    </label>
+
+    <label class="category-item">
+      <input type="checkbox" value="japanese">
+      <span>일식</span>
+    </label>
+
+    <label class="category-item">
+      <input type="checkbox" value="western">
+      <span>양식</span>
+    </label>
+
+    <label class="category-item">
+      <input type="checkbox" value="cafe">
+      <span>카페</span>
+    </label>
+
+    <label class="category-item">
+      <input type="checkbox" value="bar">
+      <span>술집</span>
+    </label>
+  </div>
+
+  <button id="actionButton" onclick="getMyLocation()">
+    내 위치로 랜덤 추천
+  </button>
+</section>
 
     <div id="result">
       <div class="card">
