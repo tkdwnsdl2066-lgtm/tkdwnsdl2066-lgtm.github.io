@@ -159,3 +159,115 @@ const shuffled = filtered.sort(() => Math.random() - 0.5);
 
 // 랜덤 추천
 const random = shuffled[Math.floor(Math.random() * shuffled.length)];
+
+function getSelectedCategories() {
+  const checked = document.querySelectorAll(
+    '.category-item input:checked'
+  );
+
+  return Array.from(checked).map(cb => cb.value);
+}
+
+function getSearchConfigs(selected) {
+  const configs = [];
+
+  if (selected.includes('all')) {
+    configs.push({ type: 'category', value: 'FD6' });
+    return configs;
+  }
+
+  selected.forEach(type => {
+    switch (type) {
+      case 'korean':
+        configs.push({ type: 'keyword', value: '한식' });
+        break;
+      case 'chinese':
+        configs.push({ type: 'keyword', value: '중식' });
+        break;
+      case 'japanese':
+        configs.push({ type: 'keyword', value: '일식' });
+        break;
+      case 'western':
+        configs.push({ type: 'keyword', value: '양식' });
+        break;
+      case 'cafe':
+        configs.push({ type: 'category', value: 'CE7', keyword: '카페' });
+        break;
+      case 'bar':
+        configs.push({ type: 'category', value: 'CE7' });
+        break;
+    }
+  });
+
+  return configs;
+}
+
+function getMyLocation() {
+  if (!navigator.geolocation) {
+    alert('위치 정보를 지원하지 않는 브라우저입니다.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(position => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    searchPlaces(lat, lng);
+  });
+}
+
+function searchPlaces(lat, lng) {
+  const selected = getSelectedCategories();
+  const configs = getSearchConfigs(selected);
+
+  const ps = new kakao.maps.services.Places();
+  let results = [];
+
+  let completed = 0;
+
+  configs.forEach(config => {
+    const callback = function (data, status) {
+      if (status === kakao.maps.services.Status.OK) {
+        results = results.concat(data);
+      }
+
+      completed++;
+      if (completed === configs.length) {
+        recommendRandom(results);
+      }
+    };
+
+    if (config.type === 'category') {
+      ps.categorySearch(
+        config.value,
+        callback,
+        {
+          location: new kakao.maps.LatLng(lat, lng),
+          radius: 1000
+        }
+      );
+    } else {
+      ps.keywordSearch(
+        config.value,
+        callback,
+        {
+          location: new kakao.maps.LatLng(lat, lng),
+          radius: 1000
+        }
+      );
+    }
+  });
+}
+
+function recommendRandom(places) {
+  if (!places.length) {
+    alert('조건에 맞는 식당이 없어요 😢');
+    return;
+  }
+
+  const randomPlace =
+    places[Math.floor(Math.random() * places.length)];
+
+  showRecommendModal(randomPlace);
+  changeToBackButton();
+}
