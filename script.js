@@ -1,4 +1,5 @@
 let lastPlaces = [];
+let currentList = [];
 
 console.log('kakao services:', kakao.maps.services);
 
@@ -124,8 +125,15 @@ function recommendRandom(places) {
 
   lastPlaces = places;
 
+  // 🔥 랜덤 10~20개 리스트 생성
+  currentList = pickRandomList(places);
+
+  // 리스트 표시
+  displayPlaceList(currentList);
+
+  // 리스트 중 1곳 랜덤 추천
   const randomPlace =
-    places[Math.floor(Math.random() * places.length)];
+    currentList[Math.floor(Math.random() * currentList.length)];
 
   showRecommendModal(randomPlace);
 }
@@ -191,10 +199,43 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.getElementById('retryButton').onclick = () => {
-  if (!lastPlaces.length) return;
+  if (!currentList.length) return;
 
   const randomPlace =
-    lastPlaces[Math.floor(Math.random() * lastPlaces.length)];
+    currentList[Math.floor(Math.random() * currentList.length)];
 
   showRecommendModal(randomPlace);
 };
+
+function pickRandomList(places) {
+  const shuffled = [...places].sort(() => Math.random() - 0.5);
+
+  const count = Math.floor(Math.random() * 11) + 10; // 10~20
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+function displayPlaceList(places) {
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = "";
+
+  places.forEach(place => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.cursor = "pointer";
+
+    const categoryText = place.category_name
+      ? place.category_name.split('>')[1]?.trim() || ''
+      : '';
+
+    card.innerHTML = `
+      <h2>${place.place_name} (${categoryText})</h2>
+      <p>거리: ${place.distance}m</p>
+    `;
+
+    card.onclick = () => {
+      window.open(place.place_url, "_blank");
+    };
+
+    resultDiv.appendChild(card);
+  });
+}
