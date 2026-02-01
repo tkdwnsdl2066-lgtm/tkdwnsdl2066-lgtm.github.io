@@ -199,8 +199,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.getElementById('retryButton').onclick = () => {
-  if (!currentList.length) return;
+  if (!lastPlaces.length) return;
 
+  // 🔥 전체 결과 기준으로 다시 10~20개 생성
+  currentList = pickRandomList(lastPlaces);
+
+  // 리스트 다시 표시
+  displayPlaceList(currentList);
+
+  // 새 리스트 중 랜덤 추천
   const randomPlace =
     currentList[Math.floor(Math.random() * currentList.length)];
 
