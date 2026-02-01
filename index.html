@@ -9,15 +9,15 @@
   <!-- 🔥 SEO 기본 -->
   <title>Lunch Buddy | 오늘 뭐 먹지? 점심 메뉴 랜덤 추천 서비스</title>
   <meta name="description" content="현재 위치를 기준으로 근처 점심 맛집을 지도에서 바로 확인하세요. Lunch Buddy는 오늘 점심 뭐 먹을지 고민될 때 메뉴를 랜덤으로 추천해주는 무료 웹 서비스입니다. 직장인, 학생 모두 사용 가능!">
-  <meta name="keywords" content="점심 추천, 맛집 지도, 위치 기반 웹, 카카오맵, GitHub Pages">
+  <meta name="keywords" content="점심 메뉴 추천, 오늘 점심 뭐 먹지, 점심 추천, 근처 맛집, 직장인 점심 메뉴, 점심 랜덤 추천">
   <meta name="author" content="Lunch Buddy">
 
   <!-- 🔗 Open Graph (공유 최적화) -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Lunch Buddy | 내 위치 기반 점심 맛집 찾기">
   <meta property="og:description" content="내 주변 점심 맛집을 지도에서 바로 확인하세요">
-  <meta property="og:url" content="https://tkdwnsdl2066-lgtm.github.io/luchmap/">
-  <meta property="og:image" content="https://tkdwnsdl2066-lgtm.github.io/luchmap/og-image.png">
+  <meta property="og:url" content="https://tkdwnsdl2066-lgtm.github.io/">
+  <meta property="og:image" content="https://tkdwnsdl2066-lgtm.github.io/og-image.png">
 
   <!-- 🗺 카카오 지도 SDK -->
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d92ced3d51774894002d4221f8fdfb1e&libraries=services"></script>
@@ -37,8 +37,10 @@
 </p>
   
   <div class="container">
-    <h1>🍱Lunch Buddy</h1>
-    <button onclick="getMyLocation()">내 위치로 음식점 찾기</button>
+    <h2>🍱Lunch Buddy</h2>
+      <button id="actionButton" onclick="getMyLocation()">
+          내 위치로 음식점 찾기
+      </button>
 
     <div id="result">
       <div class="card">
