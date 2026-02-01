@@ -96,6 +96,9 @@ function displayPlaceList(places, randomPlace) {
 
     // 추천 식당 모달 띄우기
     showRecommendModal(randomPlace);
+
+    // ✅ 여기서 버튼 변경
+    changeToBackButton();
 }
 
 // 추천 식당 모달 관련
