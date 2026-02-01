@@ -269,4 +269,4 @@ function displayPlaceList(places) {
 
     resultDiv.appendChild(card);
   });
-
+}
