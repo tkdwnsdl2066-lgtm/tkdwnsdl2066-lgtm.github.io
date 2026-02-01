@@ -138,7 +138,7 @@ function recommendRandom(places) {
   const randomPlace =
     currentList[Math.floor(Math.random() * currentList.length)];
 
-  // 🔥 추천 식당을 리스트 최상단으로 이동
+  // 추천 식당을 리스트 최상단으로
   currentList = [
     randomPlace,
     ...currentList.filter(p => p.id !== randomPlace.id)
@@ -147,18 +147,11 @@ function recommendRandom(places) {
   // 리스트 표시
   displayPlaceList(currentList);
 
-  // 추천 모달 표시
-  showRecommendModal(randomPlace);
-
-  // 🔥 버튼 텍스트 변경 (여기!)
-  document.getElementById('actionButton').innerText = '다시 추천';
-}
-
-  // 리스트 표시
-  displayPlaceList(currentList);
-
   // 모달 표시
   showRecommendModal(randomPlace);
+
+  // 🔥 메인 버튼 텍스트 변경
+  document.getElementById('actionButton').innerText = '다시 추천';
 }
 
 /* =========================
