@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tkdwnsdl2066-lgtm.github.io/luchmap/sitemap.xml
