@@ -124,3 +124,11 @@ function showRecommendModal(place) {
         }
     }
 }
+
+function changeToBackButton() {
+    const btn = document.getElementById("actionButton");
+    btn.innerText = "처음으로 돌아가기";
+    btn.onclick = () => {
+        window.location.href = "/guide.html";
+    };
+}
