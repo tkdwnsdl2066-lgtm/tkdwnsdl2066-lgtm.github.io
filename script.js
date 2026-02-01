@@ -1,3 +1,5 @@
+let lastPlaces = [];
+
 console.log('kakao services:', kakao.maps.services);
 
 /* =========================
@@ -120,11 +122,12 @@ function recommendRandom(places) {
     return;
   }
 
+  lastPlaces = places;
+
   const randomPlace =
     places[Math.floor(Math.random() * places.length)];
 
   showRecommendModal(randomPlace);
-  changeToBackButton?.(); // 있으면 실행
 }
 
 /* =========================
@@ -187,4 +190,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-let lastPlaces = [];
+document.getElementById('retryButton').onclick = () => {
+  if (!lastPlaces.length) return;
+
+  const randomPlace =
+    lastPlaces[Math.floor(Math.random() * lastPlaces.length)];
+
+  showRecommendModal(randomPlace);
+};
