@@ -44,7 +44,7 @@ function getSearchConfigs(selected) {
         configs.push({ type: 'category', value: 'CE7' });
         break;
       case 'bar':
-        configs.push({ type: 'category', value: 'CE7' });
+        configs.push({ type: 'keyword', value: '술집' });
         break;
     }
   });
