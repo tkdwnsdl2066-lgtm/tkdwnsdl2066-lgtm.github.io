@@ -135,3 +135,27 @@ function changeToBackButton() {
         window.location.href = "/guide.html";
     };
 }
+
+document.getElementById("modalCategory").innerText =
+  `${categoryText} · 영업 여부는 카카오맵에서 확인`;
+
+// 영업 가능성 높은 식당만 필터링
+const filtered = data.filter(place => {
+    return (
+        place.phone &&               // 전화번호 있음
+        place.place_url &&           // 카카오 장소 페이지 있음
+        place.category_name &&       // 카테고리 명확
+        place.distance               // 거리 정보 있음
+    );
+});
+
+if (filtered.length === 0) {
+    alert("현재 영업 중인 식당을 찾기 어렵습니다.");
+    return;
+}
+
+// 리스트 섞기
+const shuffled = filtered.sort(() => Math.random() - 0.5);
+
+// 랜덤 추천
+const random = shuffled[Math.floor(Math.random() * shuffled.length)];
