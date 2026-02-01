@@ -10,7 +10,6 @@ function getSelectedCategories() {
   const checked = document.querySelectorAll(
     '.category-item input:checked'
   );
-
   return Array.from(checked).map(cb => cb.value);
 }
 
@@ -53,7 +52,7 @@ function getSearchConfigs(selected) {
 }
 
 /* =========================
-   위치 가져오기 (버튼 클릭)
+   위치 가져오기
 ========================= */
 function getMyLocation() {
   if (!navigator.geolocation) {
@@ -115,7 +114,7 @@ function searchPlaces(lat, lng) {
 }
 
 /* =========================
-   랜덤 추천
+   랜덤 추천 + 리스트 생성
 ========================= */
 function recommendRandom(places) {
   if (!places.length) {
@@ -125,21 +124,28 @@ function recommendRandom(places) {
 
   lastPlaces = places;
 
-  // 🔥 랜덤 10~20개 리스트 생성
+  // 랜덤 10~20개 리스트
   currentList = pickRandomList(places);
+
+  // 랜덤 추천
+  const randomPlace =
+    currentList[Math.floor(Math.random() * currentList.length)];
+
+  // 추천 식당을 리스트 최상단으로
+  currentList = [
+    randomPlace,
+    ...currentList.filter(p => p.id !== randomPlace.id)
+  ];
 
   // 리스트 표시
   displayPlaceList(currentList);
 
-  // 리스트 중 1곳 랜덤 추천
-  const randomPlace =
-    currentList[Math.floor(Math.random() * currentList.length)];
-
+  // 모달 표시
   showRecommendModal(randomPlace);
 }
 
 /* =========================
-   추천 모달 표시
+   추천 모달
 ========================= */
 function showRecommendModal(place) {
   const modal = document.getElementById("recommendModal");
@@ -158,8 +164,8 @@ function showRecommendModal(place) {
   document.getElementById("modalDistance").innerText =
     `거리: ${place.distance}m`;
 
-  const link = document.getElementById("modalMapLink");
-  link.href = place.place_url;
+  document.getElementById("modalMapLink").href =
+    place.place_url;
 
   modal.style.display = "block";
 
@@ -181,14 +187,14 @@ document.addEventListener('DOMContentLoaded', () => {
     '.category-item input:not([value="all"])'
   );
 
-  // 전체 클릭 시 → 나머지 해제
+  // 전체 선택 시 나머지 해제
   allCheckbox.addEventListener('change', () => {
     if (allCheckbox.checked) {
       otherCheckboxes.forEach(cb => cb.checked = false);
     }
   });
 
-  // 다른 카테고리 클릭 시 → 전체 해제
+  // 다른 선택 시 전체 해제
   otherCheckboxes.forEach(cb => {
     cb.addEventListener('change', () => {
       if (cb.checked) {
@@ -198,25 +204,33 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+/* =========================
+   다시 추천 버튼
+========================= */
 document.getElementById('retryButton').onclick = () => {
   if (!lastPlaces.length) return;
 
-  // 🔥 전체 결과 기준으로 다시 10~20개 생성
+  // 다시 10~20개 랜덤 생성
   currentList = pickRandomList(lastPlaces);
 
-  // 리스트 다시 표시
-  displayPlaceList(currentList);
-
-  // 새 리스트 중 랜덤 추천
   const randomPlace =
     currentList[Math.floor(Math.random() * currentList.length)];
 
+  // 추천 식당 최상단
+  currentList = [
+    randomPlace,
+    ...currentList.filter(p => p.id !== randomPlace.id)
+  ];
+
+  displayPlaceList(currentList);
   showRecommendModal(randomPlace);
 };
 
+/* =========================
+   유틸 함수
+========================= */
 function pickRandomList(places) {
   const shuffled = [...places].sort(() => Math.random() - 0.5);
-
   const count = Math.floor(Math.random() * 11) + 10; // 10~20
   return shuffled.slice(0, Math.min(count, shuffled.length));
 }
@@ -225,7 +239,7 @@ function displayPlaceList(places) {
   const resultDiv = document.getElementById("result");
   resultDiv.innerHTML = "";
 
-  places.forEach(place => {
+  places.forEach((place, index) => {
     const card = document.createElement("div");
     card.className = "card";
     card.style.cursor = "pointer";
@@ -235,7 +249,7 @@ function displayPlaceList(places) {
       : '';
 
     card.innerHTML = `
-      <h2>${place.place_name} (${categoryText})</h2>
+      <h2>${index === 0 ? '⭐ ' : ''}${place.place_name} (${categoryText})</h2>
       <p>거리: ${place.distance}m</p>
     `;
 
