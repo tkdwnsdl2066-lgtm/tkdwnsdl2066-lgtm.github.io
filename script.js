@@ -157,3 +157,32 @@ function showRecommendModal(place) {
     if (e.target === modal) modal.style.display = "none";
   };
 }
+
+/* =========================
+   카테고리 체크 UX 제어
+========================= */
+document.addEventListener('DOMContentLoaded', () => {
+  const allCheckbox = document.querySelector(
+    '.category-item input[value="all"]'
+  );
+
+  const otherCheckboxes = document.querySelectorAll(
+    '.category-item input:not([value="all"])'
+  );
+
+  // 전체 클릭 시 → 나머지 해제
+  allCheckbox.addEventListener('change', () => {
+    if (allCheckbox.checked) {
+      otherCheckboxes.forEach(cb => cb.checked = false);
+    }
+  });
+
+  // 다른 카테고리 클릭 시 → 전체 해제
+  otherCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        allCheckbox.checked = false;
+      }
+    });
+  });
+});
