@@ -128,13 +128,7 @@ function showRecommendModal(place) {
     }
 }
 
-function changeToBackButton() {
-    const btn = document.getElementById("actionButton");
-    btn.innerText = "처음으로 돌아가기";
-    btn.onclick = () => {
-        window.location.href = "/guide.html";
-    };
-}
+
 
 document.getElementById("modalCategory").innerText =
   `${categoryText} · 영업 여부는 카카오맵에서 확인`;
