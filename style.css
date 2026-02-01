@@ -166,3 +166,9 @@ button:active {
   color: #fff;
   border-color: #4caf50;
 }
+
+.home-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
