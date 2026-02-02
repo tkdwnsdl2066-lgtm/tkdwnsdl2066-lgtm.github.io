@@ -168,8 +168,7 @@ function showRecommendModal(place) {
     ? place.category_name.split('>')[1]?.trim() || ''
     : '';
 
-  document.getElementById("modalCategory").innerText =
-    `${categoryText} · 영업 여부는 카카오맵에서 확인`;
+  document.getElementById("modalCategory").innerText = categoryText;
 
   document.getElementById("modalDistance").innerText =
     `거리: ${place.distance}m`;
