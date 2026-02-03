@@ -291,7 +291,9 @@ function shareKakao(isResult = false) {
     description = `${place.place_name} · ${place.distance}m`;
 
     cardLink = "https://tkdwnsdl2066-lgtm.github.io/guide";
-    buttonLink = place.place_url;
+    buttonLink =
+  "https://tkdwnsdl2066-lgtm.github.io/go.html?url=" +
+  encodeURIComponent(place.place_url);
     buttonTitle = "식당 바로가기";
   }
 
