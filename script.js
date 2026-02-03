@@ -270,34 +270,35 @@ function displayPlaceList(places) {
   });
 }
 
+
 function shareKakao(isResult = false) {
+  console.log("🔥 shareKakao 호출됨 / isResult =", isResult);
+
   let title = "Lunch Buddy 🍱";
   let description =
     "오늘 점심 뭐 먹지? 고민될 때 딱!\n내 주변 맛집을 랜덤으로 추천해줘요.";
   let imageUrl =
     "https://tkdwnsdl2066-lgtm.github.io/og-image2.png";
 
-  // 기본값 (첫 화면 공유)
   let cardLink = "https://tkdwnsdl2066-lgtm.github.io/guide";
   let buttonLink = "https://tkdwnsdl2066-lgtm.github.io/guide";
   let buttonTitle = "런치 버디 열기";
 
-  // ✅ 결과 공유일 경우
   if (isResult && currentList.length > 0) {
     const place = currentList[0];
 
     title = "오늘 점심 고민 끝!? 🍽️";
     description = `${place.place_name} · ${place.distance}m`;
 
-    // ⭐ 카드 클릭 → 가이드
     cardLink = "https://tkdwnsdl2066-lgtm.github.io/guide";
-
-    // ⭐ 버튼 클릭 → 음식점
     buttonLink = place.place_url;
-
-    // 버튼 텍스트 변경
     buttonTitle = "식당 바로가기";
   }
+
+  // ✅ 여기서 찍어야 함
+  console.log("📌 카드 링크:", cardLink);
+  console.log("📌 버튼 링크:", buttonLink);
+  console.log("📌 버튼 제목:", buttonTitle);
 
   Kakao.Share.sendDefault({
     objectType: "feed",
