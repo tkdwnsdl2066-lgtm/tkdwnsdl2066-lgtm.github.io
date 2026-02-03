@@ -281,11 +281,14 @@ function shareKakao(isResult = false) {
 
   // 결과 공유일 경우 (추천된 가게가 있을 때)
   if (isResult && currentList.length > 0) {
-    const place = currentList[0];
-    title = `오늘 점심 여기 어때? 🍽️`;
-    description = `${place.place_name}\n거리: ${place.distance}m\nLunch Buddy 추천`;
-    linkUrl = place.place_url;
-  }
+  const place = currentList[0];
+
+  title = "오늘 점심 고민 끝!? 🍽️";
+
+  description = `${place.place_name} · ${place.distance}m`;
+
+  linkUrl = place.place_url;
+}
 
   Kakao.Share.sendDefault({
     objectType: "feed",
