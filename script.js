@@ -279,16 +279,16 @@ function shareKakao(isResult = false) {
   let linkUrl =
     "https://tkdwnsdl2066-lgtm.github.io/guide";
 
-  // 결과 공유일 경우 (추천된 가게가 있을 때)
+  // 결과 공유일 경우
   if (isResult && currentList.length > 0) {
-  const place = currentList[0];
+    const place = currentList[0];
 
-  title = "오늘 점심 고민 끝!? 🍽️";
+    title = "오늘 점심 고민 끝!? 🍽️";
+    description = `${place.place_name} · ${place.distance}m`;
 
-  description = `${place.place_name} · ${place.distance}m`;
-
-  linkUrl = place.place_url;
-}
+    // ⭐ 결과 공유는 결과 페이지(지도)로
+    linkUrl = place.place_url;
+  }
 
   Kakao.Share.sendDefault({
     objectType: "feed",
@@ -305,8 +305,8 @@ function shareKakao(isResult = false) {
       {
         title: "Lunch Buddy 열기",
         link: {
-          mobileWebUrl: "https://tkdwnsdl2066-lgtm.github.io/guide",
-          webUrl: "https://tkdwnsdl2066-lgtm.github.io/guide"
+          mobileWebUrl: linkUrl,
+          webUrl: linkUrl
         }
       }
     ]
