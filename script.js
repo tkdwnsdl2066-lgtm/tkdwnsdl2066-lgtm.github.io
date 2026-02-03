@@ -277,7 +277,7 @@ function shareKakao(isResult = false) {
   let imageUrl =
     "https://tkdwnsdl2066-lgtm.github.io/og-image2.png";
   let linkUrl =
-    "https://tkdwnsdl2066-lgtm.github.io/";
+    "https://tkdwnsdl2066-lgtm.github.io/guide";
 
   // 결과 공유일 경우 (추천된 가게가 있을 때)
   if (isResult && currentList.length > 0) {
@@ -302,8 +302,8 @@ function shareKakao(isResult = false) {
       {
         title: "Lunch Buddy 열기",
         link: {
-          mobileWebUrl: "https://tkdwnsdl2066-lgtm.github.io/",
-          webUrl: "https://tkdwnsdl2066-lgtm.github.io/"
+          mobileWebUrl: "https://tkdwnsdl2066-lgtm.github.io/guide",
+          webUrl: "https://tkdwnsdl2066-lgtm.github.io/guide"
         }
       }
     ]
