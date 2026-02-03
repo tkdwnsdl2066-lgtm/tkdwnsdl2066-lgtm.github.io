@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이동 중입니다…</title>
+
+  <!-- GA (선택) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SBX6594Q9Y"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-SBX6594Q9Y');
+  </script>
+
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <p>🍽️ 식당 페이지로 이동 중입니다…</p>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const url = params.get("url");
+
+    if (url) {
+      // 🔥 클릭 수 측정도 가능
+      if (window.gtag) {
+        gtag('event', 'kakao_map_redirect', {
+          event_category: 'share',
+          event_label: url
+        });
+      }
+
+      // 살짝 딜레이 후 이동 (인앱 브라우저 안정성)
+      setTimeout(() => {
+        window.location.href = url;
+      }, 300);
+    } else {
+      document.body.innerHTML = "<p>잘못된 접근입니다.</p>";
+    }
+  </script>
+</body>
+</html>
