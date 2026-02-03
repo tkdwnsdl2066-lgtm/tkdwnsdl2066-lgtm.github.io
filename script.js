@@ -269,3 +269,43 @@ function displayPlaceList(places) {
     resultDiv.appendChild(card);
   });
 }
+
+function shareKakao(isResult = false) {
+  let title = "Lunch Buddy 🍱";
+  let description =
+    "오늘 점심 뭐 먹지? 고민될 때 딱!\n내 주변 맛집을 랜덤으로 추천해줘요.";
+  let imageUrl =
+    "https://tkdwnsdl2066-lgtm.github.io/og-image2.png";
+  let linkUrl =
+    "https://tkdwnsdl2066-lgtm.github.io/";
+
+  // 결과 공유일 경우 (추천된 가게가 있을 때)
+  if (isResult && currentList.length > 0) {
+    const place = currentList[0];
+    title = `오늘 점심 여기 어때? 🍽️`;
+    description = `${place.place_name}\n거리: ${place.distance}m\nLunch Buddy 추천`;
+    linkUrl = place.place_url;
+  }
+
+  Kakao.Share.sendDefault({
+    objectType: "feed",
+    content: {
+      title,
+      description,
+      imageUrl,
+      link: {
+        mobileWebUrl: linkUrl,
+        webUrl: linkUrl
+      }
+    },
+    buttons: [
+      {
+        title: "Lunch Buddy 열기",
+        link: {
+          mobileWebUrl: "https://tkdwnsdl2066-lgtm.github.io/",
+          webUrl: "https://tkdwnsdl2066-lgtm.github.io/"
+        }
+      }
+    ]
+  });
+}
