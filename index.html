@@ -35,7 +35,13 @@
 
   <!-- 🗺 카카오 지도 SDK -->
   <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d92ced3d51774894002d4221f8fdfb1e&libraries=services"></script>
-
+  
+  <!-- 💬 카카오 공유 SDK -->
+<script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+<script>
+  Kakao.init('d92ced3d51774894002d4221f8fdfb1e'); // ⚠️ JS 키 (REST 말고)
+</script>
+  
   <!-- 📜 내 스크립트 -->
   <script defer src="script.js"></script>
 
@@ -102,6 +108,11 @@
   <button id="actionButton" onclick="getMyLocation()">
     내 위치로 랜덤 추천
   </button>
+
+  <button class="share-btn" onclick="shareKakao()">
+    💬 카카오톡으로 공유하기
+  </button>
+  
 </section>
 
 <div id="result"></div>
@@ -117,6 +128,9 @@
       <a id="modalMapLink" target="_blank">카카오맵에서 보기</a>
       <button id="retryButton" style="margin-top:12px;">
         🔄 다시 추천
+      </button>
+      <button class="share-btn" onclick="shareKakao(true)">
+        💬 이 맛집 카톡으로 공유
       </button>
     </div>
   </div>
