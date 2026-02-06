@@ -6,13 +6,25 @@ let lastPlaces = [];
 const COUNT_KEY = "lunchBuddyDailyCount";
 const RESET_KEY = "lunchBuddyLastReset";
 
+function getTimeBaseCount() {
+  const hour = new Date().getHours();
+
+  // 🔁 리셋: 09:00
+  if (hour >= 9 && hour < 11)  return 10;    // 막 시작한 오전
+  if (hour >= 11 && hour < 13) return 120;   // 점심 러시 시작
+  if (hour >= 13 && hour < 15) return 250;   // 점심 피크
+  if (hour >= 15 && hour < 18) return 350;   // 오후
+  if (hour >= 18 && hour < 21) return 500;   // 저녁 피크
+  if (hour >= 21 && hour < 24) return 650;   // 퇴근 후
+  return 700;                                 // 새벽 (전날 누적이 많아 보이게)
+}
+
 let dailyCount = Number(localStorage.getItem(COUNT_KEY));
 
 if (!dailyCount || dailyCount === 0) {
-  // 첫 방문 시 랜덤 시작값 (20 ~ 80)
-  dailyCount = Math.floor(Math.random() * 61) + 20;
-  localStorage.setItem(COUNT_KEY, dailyCount);
+  initDailyCount();
 }
+
 
 function getTodayResetTime() {
   const now = new Date();
@@ -27,16 +39,20 @@ function getTodayResetTime() {
   return resetTime.getTime();
 }
 
+function initDailyCount() {
+  const base = getTimeBaseCount();
+  dailyCount = base + Math.floor(Math.random() * 20); // 랜덤 폭은 여기서만 관리
+  localStorage.setItem(COUNT_KEY, dailyCount);
+}
+
 function checkDailyReset() {
   const lastReset = Number(localStorage.getItem(RESET_KEY)) || 0;
   const todayResetTime = getTodayResetTime();
 
   if (lastReset < todayResetTime) {
-  // 🔥 매일 9시마다 0 말고 랜덤 старт
-  dailyCount = Math.floor(Math.random() * 41) + 10; // 10 ~ 50
-  localStorage.setItem(COUNT_KEY, dailyCount);
-  localStorage.setItem(RESET_KEY, Date.now());
-   }
+    initDailyCount(); // ✅ 여기로 통일
+    localStorage.setItem(RESET_KEY, Date.now());
+  }
 }
 
 function renderDailyCount() {
@@ -115,7 +131,6 @@ function startDailyCounter() {
 
 let currentList = [];
 
-console.log('kakao services:', kakao.maps.services);
 
 /* =========================
    선택된 카테고리 가져오기
@@ -248,15 +263,7 @@ function recommendRandom(places) {
   // 랜덤 10~20개 리스트
   currentList = pickRandomList(places);
 
-  // 리스트 중 1곳 랜덤 추천
-  const randomPlace =
-    currentList[Math.floor(Math.random() * currentList.length)];
-
-  // 추천 식당을 리스트 최상단으로
-  currentList = [
-    randomPlace,
-    ...currentList.filter(p => p.id !== randomPlace.id)
-  ];
+   currentList = pickTopRandom(currentList);
 
   // 리스트 표시
   displayPlaceList(currentList);
@@ -339,14 +346,7 @@ document.getElementById('retryButton').onclick = () => {
   // 다시 10~20개 랜덤 생성
   currentList = pickRandomList(lastPlaces);
 
-  const randomPlace =
-    currentList[Math.floor(Math.random() * currentList.length)];
-
-  // 추천 식당 최상단
-  currentList = [
-    randomPlace,
-    ...currentList.filter(p => p.id !== randomPlace.id)
-  ];
+  currentList = pickTopRandom(currentList);
 
   displayPlaceList(currentList);
   showRecommendModal(randomPlace);
@@ -387,6 +387,15 @@ function displayPlaceList(places) {
   });
 }
 
+function pickTopRandom(list) {
+  const randomPlace =
+    list[Math.floor(Math.random() * list.length)];
+
+  return [
+    randomPlace,
+    ...list.filter(p => p.id !== randomPlace.id)
+  ];
+}
 
 function shareKakao(isResult = false) {
   console.log("🔥 shareKakao 호출됨 / isResult =", isResult);
