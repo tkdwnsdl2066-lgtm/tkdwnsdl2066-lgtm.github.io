@@ -151,7 +151,7 @@ function recommendRandom(places) {
   showRecommendModal(randomPlace);
 
   // 🔥 메인 버튼 텍스트 변경
-  document.getElementById('actionButton').innerText = '다시 추천';
+  document.getElementById('actionButton').innerText = '다른 맛집 버디 하기';
 }
 
 /* =========================
