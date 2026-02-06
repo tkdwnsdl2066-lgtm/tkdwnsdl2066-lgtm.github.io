@@ -139,6 +139,25 @@ Lunch Buddy는 점메추 웹 서비스, 점심 메뉴 추천 사이트,
     내 위치로 버디하기
   </button>
 
+    <!-- 🔽 새 버디하기 (숨김 → 열림) -->
+  <div class="buddy-wrap">
+    <button id="openBuddyBtn" class="buddy-toggle">
+      📍 특정 위치로 버디하기
+    </button>
+
+    <div id="buddyPanel" class="buddy-panel hidden">
+      <input
+        id="buddyLocationInput"
+        type="text"
+        placeholder="예: 강남역, 홍대, 역촌동, 원광대"
+      />
+      <button id="buddySearchBtn">
+        이 위치로 버디하기
+      </button>
+    </div>
+  </div>
+  
+
   <button class="share-btn" onclick="shareKakao()">
     💬 카카오톡으로 공유하기
   </button>
