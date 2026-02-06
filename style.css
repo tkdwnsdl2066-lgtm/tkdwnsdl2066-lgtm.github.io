@@ -243,19 +243,46 @@ button:active {
   }
 }
 
-/* 🔥 일 방문자 수 애니메이션 */
+/* 🔥 일 방문자 수 애니메이션 (업그레이드) */
 #dailyCountNum {
   display: inline-block;
   font-weight: 800;
-  color: #e74c3c;
+  color: #e74c3c; /* 토마토 레드 – 식욕 자극 */
+  will-change: transform;
 }
 
 #dailyCountNum.bump {
-  animation: bump 0.25s ease;
+  animation: bump 0.28s cubic-bezier(.34,1.56,.64,1);
 }
 
 @keyframes bump {
   0%   { transform: scale(1); }
-  40%  { transform: scale(1.25); }
+  40%  { transform: scale(1.35); }
+  70%  { transform: scale(0.95); }
   100% { transform: scale(1); }
+}
+
+/* +1 떠오르는 이펙트 */
+.plus-one {
+  position: absolute;
+  font-weight: 800;
+  font-size: 14px;
+  color: #ff6f00; /* 꿀색 느낌 */
+  animation: floatUp 0.8s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.9);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(1.1);
+  }
 }
