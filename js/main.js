@@ -324,3 +324,40 @@ function shareKakao(isResult = false) {
     ]
   });
 }
+
+
+
+/* =========================
+   버디 패널 토글
+========================= */
+document.getElementById('openBuddyBtn').onclick = () => {
+  const panel = document.getElementById('buddyPanel');
+  panel.classList.toggle('hidden');
+};
+
+/* =========================
+   지정 위치 → 좌표 변환 → 검색
+========================= */
+document.getElementById('buddySearchBtn').onclick = () => {
+  const keyword = document.getElementById('buddyLocationInput').value.trim();
+
+  if (!keyword) {
+    alert('위치를 입력해주세요!');
+    return;
+  }
+
+  const ps = new kakao.maps.services.Places();
+
+  ps.keywordSearch(keyword, function (data, status) {
+    if (status !== kakao.maps.services.Status.OK || !data.length) {
+      alert('해당 위치를 찾을 수 없어요 😢');
+      return;
+    }
+
+    const lat = data[0].y;
+    const lng = data[0].x;
+
+    // 기존 로직 재활용 (1km 반경 맛집 추천)
+    searchPlaces(lat, lng);
+  });
+};
