@@ -76,8 +76,8 @@ function getNextInterval() {
   }
   // 저녁시간 (선택)
   else if (hour >= 18 && hour <= 20) {
-    min = 4000;
-    max = 7000;
+    min = 2000;
+    max = 4000;
   }
 
   return Math.floor(Math.random() * (max - min + 1)) + min;
