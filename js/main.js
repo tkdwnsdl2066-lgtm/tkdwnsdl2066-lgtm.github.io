@@ -263,15 +263,7 @@ function recommendRandom(places) {
   // 랜덤 10~20개 리스트
   currentList = pickRandomList(places);
 
-  // 리스트 중 1곳 랜덤 추천
-  const randomPlace =
-    currentList[Math.floor(Math.random() * currentList.length)];
-
-  // 추천 식당을 리스트 최상단으로
-  currentList = [
-    randomPlace,
-    ...currentList.filter(p => p.id !== randomPlace.id)
-  ];
+   currentList = pickTopRandom(currentList);
 
   // 리스트 표시
   displayPlaceList(currentList);
@@ -354,14 +346,7 @@ document.getElementById('retryButton').onclick = () => {
   // 다시 10~20개 랜덤 생성
   currentList = pickRandomList(lastPlaces);
 
-  const randomPlace =
-    currentList[Math.floor(Math.random() * currentList.length)];
-
-  // 추천 식당 최상단
-  currentList = [
-    randomPlace,
-    ...currentList.filter(p => p.id !== randomPlace.id)
-  ];
+  currentList = pickTopRandom(currentList);
 
   displayPlaceList(currentList);
   showRecommendModal(randomPlace);
@@ -402,6 +387,15 @@ function displayPlaceList(places) {
   });
 }
 
+function pickTopRandom(list) {
+  const randomPlace =
+    list[Math.floor(Math.random() * list.length)];
+
+  return [
+    randomPlace,
+    ...list.filter(p => p.id !== randomPlace.id)
+  ];
+}
 
 function shareKakao(isResult = false) {
   console.log("🔥 shareKakao 호출됨 / isResult =", isResult);
