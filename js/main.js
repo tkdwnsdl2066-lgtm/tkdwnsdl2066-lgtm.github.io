@@ -1,4 +1,79 @@
 let lastPlaces = [];
+
+/* =========================
+   일일 이용자 수 카운터 (오전 9시 초기화)
+========================= */
+const COUNT_KEY = "lunchBuddyDailyCount";
+const RESET_KEY = "lunchBuddyLastReset";
+
+let dailyCount = Number(localStorage.getItem(COUNT_KEY));
+
+if (!dailyCount || dailyCount === 0) {
+  // 첫 방문 시 랜덤 시작값 (20 ~ 80)
+  dailyCount = Math.floor(Math.random() * 61) + 20;
+  localStorage.setItem(COUNT_KEY, dailyCount);
+}
+
+function getTodayResetTime() {
+  const now = new Date();
+  const resetTime = new Date();
+  resetTime.setHours(9, 0, 0, 0); // 오전 9시
+
+  // 아직 오늘 9시 이전이면, 기준은 어제 9시
+  if (now < resetTime) {
+    resetTime.setDate(resetTime.getDate() - 1);
+  }
+
+  return resetTime.getTime();
+}
+
+function checkDailyReset() {
+  const lastReset = Number(localStorage.getItem(RESET_KEY)) || 0;
+  const todayResetTime = getTodayResetTime();
+
+  if (lastReset < todayResetTime) {
+  // 🔥 매일 9시마다 0 말고 랜덤 старт
+  dailyCount = Math.floor(Math.random() * 41) + 10; // 10 ~ 50
+  localStorage.setItem(COUNT_KEY, dailyCount);
+  localStorage.setItem(RESET_KEY, Date.now());
+   }
+}
+
+function renderDailyCount() {
+  const textEl = document.getElementById("userCountText");
+  const numEl = document.getElementById("dailyCountNum");
+
+  if (!textEl || !numEl) return;
+
+  numEl.innerText = `${dailyCount.toLocaleString()}명`;
+}
+
+function increaseDailyCount() {
+  dailyCount += 1;
+  localStorage.setItem(COUNT_KEY, dailyCount);
+  renderDailyCount();
+
+  const numEl = document.getElementById("dailyCountNum");
+  if (!numEl) return;
+
+  // 🔥 애니메이션 재실행 트릭
+  numEl.classList.remove("bump");
+  void numEl.offsetWidth; // 강제 리플로우
+  numEl.classList.add("bump");
+}
+
+function startDailyCounter() {
+  checkDailyReset();
+  renderDailyCount();
+
+  const randomInterval = Math.floor(Math.random() * 5000) + 5000; // 5~10초
+
+  setTimeout(() => {
+    increaseDailyCount();
+    startDailyCounter(); // 재귀적으로 계속 실행
+  }, randomInterval);
+}
+
 let currentList = [];
 
 console.log('kakao services:', kakao.maps.services);
@@ -211,6 +286,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+     // ✅ 여기 추가
+  startDailyCounter();
 });
 
 /* =========================
