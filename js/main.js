@@ -33,15 +33,26 @@ function checkDailyReset() {
 }
 
 function renderDailyCount() {
-  const el = document.getElementById("userCountText");
-  if (!el) return;
-  el.innerHTML = `오늘 런치버디 이용자 수: <strong>${dailyCount.toLocaleString()}명</strong>`;
+  const textEl = document.getElementById("userCountText");
+  const numEl = document.getElementById("dailyCountNum");
+
+  if (!textEl || !numEl) return;
+
+  numEl.innerText = `${dailyCount.toLocaleString()}명`;
 }
 
 function increaseDailyCount() {
   dailyCount += 1;
   localStorage.setItem(COUNT_KEY, dailyCount);
   renderDailyCount();
+
+  const numEl = document.getElementById("dailyCountNum");
+  if (!numEl) return;
+
+  // 🔥 애니메이션 재실행 트릭
+  numEl.classList.remove("bump");
+  void numEl.offsetWidth; // 강제 리플로우
+  numEl.classList.add("bump");
 }
 
 function startDailyCounter() {
