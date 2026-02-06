@@ -221,6 +221,7 @@ button:active {
   border: 1px solid #ddd;
   font-size: 15px;
   margin-bottom: 8px;
+  box-sizing: border-box;   /* ✅ 이거 추가 */
 }
 
 .buddy-panel button {
@@ -241,3 +242,4 @@ button:active {
     transform: translateY(0);
   }
 }
+
