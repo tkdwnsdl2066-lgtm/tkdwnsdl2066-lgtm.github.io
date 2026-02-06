@@ -151,7 +151,7 @@ function recommendRandom(places) {
   showRecommendModal(randomPlace);
 
   // 🔥 메인 버튼 텍스트 변경
-  document.getElementById('actionButton').innerText = '다른 맛집 버디 하기';
+  document.getElementById('actionButton').innerText = '내 주변 다른 맛집 찾기';
 }
 
 /* =========================
@@ -294,7 +294,7 @@ function shareKakao(isResult = false) {
     buttonLink =
   "https://tkdwnsdl2066-lgtm.github.io/go.html?url=" +
   encodeURIComponent(place.place_url);
-    buttonTitle = "식당 바로가기";
+    buttonTitle = "지도앱에서 보기";
   }
 
   // ✅ 여기서 찍어야 함
