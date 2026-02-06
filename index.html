@@ -106,60 +106,60 @@ Lunch Buddy는 점메추 웹 서비스, 점심 메뉴 추천 사이트,
 
     <label class="category-item">
       <input type="checkbox" value="korean">
-      <span>한식</span>
+      <span>🍚 한식</span>
     </label>
 
     <label class="category-item">
       <input type="checkbox" value="chinese">
-      <span>중식</span>
+      <span>🍜 중식</span>
     </label>
 
     <label class="category-item">
       <input type="checkbox" value="japanese">
-      <span>일식</span>
+      <span>🍣 일식</span>
     </label>
 
     <label class="category-item">
       <input type="checkbox" value="western">
-      <span>양식</span>
+      <span>🍝 양식</span>
     </label>
 
     <label class="category-item">
       <input type="checkbox" value="cafe">
-      <span>카페</span>
+      <span>☕ 카페</span>
     </label>
 
     <label class="category-item">
       <input type="checkbox" value="bar">
-      <span>술집</span>
+      <span>🍺 술집</span>
     </label>
   </div>
 
   <button id="actionButton" onclick="getMyLocation()">
-    내 위치로 버디하기
+    내 근처 맛집 추천해줘!
   </button>
 
     <!-- 🔽 새 버디하기 (숨김 → 열림) -->
   <div class="buddy-wrap">
     <button id="openBuddyBtn" class="buddy-toggle">
-      📍 원하는 위치에서 버디하기
+      📍 다른 동네 맛집 추천받기
     </button>
 
     <div id="buddyPanel" class="buddy-panel hidden">
       <input
         id="buddyLocationInput"
         type="text"
-        placeholder="예: 강남역, 홍대, 역촌동, 원광대"
+        placeholder="어디근처가 궁금해? (예: 강남역, 홍대, 역촌동, 원광대)"
       />
       <button id="buddySearchBtn">
-        이 위치로 버디하기
+        이 위치로 추천해줘!
       </button>
     </div>
   </div>
   
 
   <button class="share-btn" onclick="shareKakao()">
-    💬 카카오톡으로 공유하기
+    💬 런치버디 친구한테 공유하기
   </button>
   
 </section>
@@ -174,12 +174,12 @@ Lunch Buddy는 점메추 웹 서비스, 점심 메뉴 추천 사이트,
       <h2 id="modalPlaceName"></h2>
       <p id="modalCategory"></p>
       <p id="modalDistance"></p>
-      <a id="modalMapLink" target="_blank">카카오맵에서 보기</a>
+      <a id="modalMapLink" target="_blank">지도앱에서 보기</a>
       <button id="retryButton" style="margin-top:12px;">
         🔄 다른 맛집 버디하기
       </button>
       <button class="share-btn" onclick="shareKakao(true)">
-        💬 이 맛집 카톡으로 버디
+        💬 이 맛집 친구한테 공유하기
       </button>
     </div>
   </div>
