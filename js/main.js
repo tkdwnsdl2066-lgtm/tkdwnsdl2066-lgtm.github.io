@@ -6,11 +6,26 @@ let lastPlaces = [];
 const COUNT_KEY = "lunchBuddyDailyCount";
 const RESET_KEY = "lunchBuddyLastReset";
 
+function getTimeBaseCount() {
+  const hour = new Date().getHours();
+
+  // 시간대별 "첫 방문 최소값"
+  if (hour >= 6 && hour < 10) return 20;    // 아침
+  if (hour >= 10 && hour < 12) return 80;   // 오전
+  if (hour >= 12 && hour < 14) return 200;  // 점심 피크
+  if (hour >= 14 && hour < 18) return 300;  // 오후
+  if (hour >= 18 && hour < 21) return 450;  // 저녁 피크
+  return 550;                               // 밤
+}
+
 let dailyCount = Number(localStorage.getItem(COUNT_KEY));
 
 if (!dailyCount || dailyCount === 0) {
-  // 첫 방문 시 랜덤 시작값 (20 ~ 80)
-  dailyCount = Math.floor(Math.random() * 61) + 20;
+  const base = getTimeBaseCount();
+
+  // 시간대 기준 + 약간의 랜덤 보정
+  dailyCount = base + Math.floor(Math.random() * 30); // ± 체감용 랜덤
+
   localStorage.setItem(COUNT_KEY, dailyCount);
 }
 
@@ -33,7 +48,8 @@ function checkDailyReset() {
 
   if (lastReset < todayResetTime) {
   // 🔥 매일 9시마다 0 말고 랜덤 старт
-  dailyCount = Math.floor(Math.random() * 41) + 10; // 10 ~ 50
+  const base = getTimeBaseCount();
+   dailyCount = base + Math.floor(Math.random() * 20);
   localStorage.setItem(COUNT_KEY, dailyCount);
   localStorage.setItem(RESET_KEY, Date.now());
    }
