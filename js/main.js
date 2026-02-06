@@ -22,13 +22,9 @@ function getTimeBaseCount() {
 let dailyCount = Number(localStorage.getItem(COUNT_KEY));
 
 if (!dailyCount || dailyCount === 0) {
-  const base = getTimeBaseCount();
-
-  // 시간대 기준 + 약간의 랜덤 보정
-  dailyCount = base + Math.floor(Math.random() * 30); // ± 체감용 랜덤
-
-  localStorage.setItem(COUNT_KEY, dailyCount);
+  initDailyCount();
 }
+
 
 function getTodayResetTime() {
   const now = new Date();
@@ -43,17 +39,20 @@ function getTodayResetTime() {
   return resetTime.getTime();
 }
 
+function initDailyCount() {
+  const base = getTimeBaseCount();
+  dailyCount = base + Math.floor(Math.random() * 20); // 랜덤 폭은 여기서만 관리
+  localStorage.setItem(COUNT_KEY, dailyCount);
+}
+
 function checkDailyReset() {
   const lastReset = Number(localStorage.getItem(RESET_KEY)) || 0;
   const todayResetTime = getTodayResetTime();
 
   if (lastReset < todayResetTime) {
-  // 🔥 매일 9시마다 0 말고 랜덤 старт
-  const base = getTimeBaseCount();
-   dailyCount = base + Math.floor(Math.random() * 20);
-  localStorage.setItem(COUNT_KEY, dailyCount);
-  localStorage.setItem(RESET_KEY, Date.now());
-   }
+    initDailyCount(); // ✅ 여기로 통일
+    localStorage.setItem(RESET_KEY, Date.now());
+  }
 }
 
 function renderDailyCount() {
@@ -132,7 +131,6 @@ function startDailyCounter() {
 
 let currentList = [];
 
-console.log('kakao services:', kakao.maps.services);
 
 /* =========================
    선택된 카테고리 가져오기
