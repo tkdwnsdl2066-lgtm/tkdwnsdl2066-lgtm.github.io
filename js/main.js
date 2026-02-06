@@ -269,7 +269,10 @@ function recommendRandom(places) {
   displayPlaceList(currentList);
 
   // 모달 표시
-  showRecommendModal(randomPlace);
+    // ✅ 항상 첫 번째가 메인 추천
+  const mainPlace = currentList[0];
+  showRecommendModal(mainPlace);
+
 
   // 🔥 메인 버튼 텍스트 변경
   document.getElementById('actionButton').innerText = '내 주변 다른 맛집 찾기';
@@ -349,7 +352,8 @@ document.getElementById('retryButton').onclick = () => {
   currentList = pickTopRandom(currentList);
 
   displayPlaceList(currentList);
-  showRecommendModal(randomPlace);
+  const mainPlace = currentList[0];
+  showRecommendModal(mainPlace);
 };
 
 /* =========================
