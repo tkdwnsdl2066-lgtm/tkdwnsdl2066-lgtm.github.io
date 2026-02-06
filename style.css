@@ -189,3 +189,55 @@ button:active {
 .share-btn:hover {
   background: #f7f7f7;
 }
+
+.buddy-wrap {
+  margin-top: 12px;
+}
+
+.buddy-toggle {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px dashed #ffcd00;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.buddy-panel {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fffbea;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  animation: slideDown 0.25s ease;
+}
+
+.buddy-panel input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.buddy-panel button {
+  background: #ffcd00;
+}
+
+.hidden {
+  display: none;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
