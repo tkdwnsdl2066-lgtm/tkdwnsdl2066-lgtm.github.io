@@ -62,15 +62,36 @@ function increaseDailyCount() {
   numEl.classList.add("bump");
 }
 
+function getNextInterval() {
+  const hour = new Date().getHours();
+
+  // 기본: 5~10초
+  let min = 5000;
+  let max = 10000;
+
+  // 점심시간: 2~4초
+  if (hour >= 11 && hour <= 13) {
+    min = 2000;
+    max = 4000;
+  }
+  // 저녁시간 (선택)
+  else if (hour >= 18 && hour <= 20) {
+    min = 4000;
+    max = 7000;
+  }
+
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 function startDailyCounter() {
   checkDailyReset();
   renderDailyCount();
 
-  const randomInterval = Math.floor(Math.random() * 5000) + 5000; // 5~10초
+  const randomInterval = getNextInterval();
 
   setTimeout(() => {
     increaseDailyCount();
-    startDailyCounter(); // 재귀적으로 계속 실행
+    startDailyCounter(); // 계속 반복
   }, randomInterval);
 }
 
