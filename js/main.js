@@ -56,10 +56,28 @@ function increaseDailyCount() {
   const numEl = document.getElementById("dailyCountNum");
   if (!numEl) return;
 
-  // 🔥 애니메이션 재실행 트릭
+  // 🔥 숫자 통통 애니메이션
   numEl.classList.remove("bump");
   void numEl.offsetWidth; // 강제 리플로우
   numEl.classList.add("bump");
+
+  // 🔥 +1 이펙트 생성
+  const plus = document.createElement("span");
+  plus.className = "plus-one";
+  plus.innerText = "+1";
+
+  const rect = numEl.getBoundingClientRect();
+
+  plus.style.left =
+    rect.left + window.scrollX + rect.width / 2 + "px";
+  plus.style.top =
+    rect.top + window.scrollY - 6 + "px";
+
+  document.body.appendChild(plus);
+
+  setTimeout(() => {
+    plus.remove();
+  }, 800);
 }
 
 function getNextInterval() {
