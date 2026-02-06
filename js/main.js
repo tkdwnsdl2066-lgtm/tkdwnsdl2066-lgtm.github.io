@@ -9,13 +9,14 @@ const RESET_KEY = "lunchBuddyLastReset";
 function getTimeBaseCount() {
   const hour = new Date().getHours();
 
-  // 시간대별 "첫 방문 최소값"
-  if (hour >= 6 && hour < 10) return 20;    // 아침
-  if (hour >= 10 && hour < 12) return 80;   // 오전
-  if (hour >= 12 && hour < 14) return 200;  // 점심 피크
-  if (hour >= 14 && hour < 18) return 300;  // 오후
-  if (hour >= 18 && hour < 21) return 450;  // 저녁 피크
-  return 550;                               // 밤
+  // 🔁 리셋: 09:00
+  if (hour >= 9 && hour < 11)  return 10;    // 막 시작한 오전
+  if (hour >= 11 && hour < 13) return 120;   // 점심 러시 시작
+  if (hour >= 13 && hour < 15) return 250;   // 점심 피크
+  if (hour >= 15 && hour < 18) return 350;   // 오후
+  if (hour >= 18 && hour < 21) return 500;   // 저녁 피크
+  if (hour >= 21 && hour < 24) return 650;   // 퇴근 후
+  return 700;                                 // 새벽 (전날 누적이 많아 보이게)
 }
 
 let dailyCount = Number(localStorage.getItem(COUNT_KEY));
