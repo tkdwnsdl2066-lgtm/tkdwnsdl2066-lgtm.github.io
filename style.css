@@ -247,7 +247,7 @@ button:active {
 #dailyCountNum {
   display: inline-block;
   font-weight: 800;
-  color: #ff7a00;
+  color: #e74c3c;
 }
 
 #dailyCountNum.bump {
