@@ -1,4 +1,61 @@
 let lastPlaces = [];
+
+/* =========================
+   일일 이용자 수 카운터 (오전 9시 초기화)
+========================= */
+const COUNT_KEY = "lunchBuddyDailyCount";
+const RESET_KEY = "lunchBuddyLastReset";
+
+let dailyCount = Number(localStorage.getItem(COUNT_KEY)) || 0;
+
+function getTodayResetTime() {
+  const now = new Date();
+  const resetTime = new Date();
+  resetTime.setHours(9, 0, 0, 0); // 오전 9시
+
+  // 아직 오늘 9시 이전이면, 기준은 어제 9시
+  if (now < resetTime) {
+    resetTime.setDate(resetTime.getDate() - 1);
+  }
+
+  return resetTime.getTime();
+}
+
+function checkDailyReset() {
+  const lastReset = Number(localStorage.getItem(RESET_KEY)) || 0;
+  const todayResetTime = getTodayResetTime();
+
+  if (lastReset < todayResetTime) {
+    dailyCount = 0;
+    localStorage.setItem(COUNT_KEY, dailyCount);
+    localStorage.setItem(RESET_KEY, Date.now());
+  }
+}
+
+function renderDailyCount() {
+  const el = document.getElementById("userCountText");
+  if (!el) return;
+  el.innerHTML = `오늘 런치버디 이용자 수: <strong>${dailyCount.toLocaleString()}명</strong>`;
+}
+
+function increaseDailyCount() {
+  dailyCount += 1;
+  localStorage.setItem(COUNT_KEY, dailyCount);
+  renderDailyCount();
+}
+
+function startDailyCounter() {
+  checkDailyReset();
+  renderDailyCount();
+
+  const randomInterval = Math.floor(Math.random() * 5000) + 5000; // 5~10초
+
+  setTimeout(() => {
+    increaseDailyCount();
+    startDailyCounter(); // 재귀적으로 계속 실행
+  }, randomInterval);
+}
+
 let currentList = [];
 
 console.log('kakao services:', kakao.maps.services);
@@ -211,6 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+     // ✅ 여기 추가
+  startDailyCounter();
 });
 
 /* =========================
