@@ -100,6 +100,18 @@ Lunch Buddy는 점메추 웹 서비스, 점심 메뉴 추천 사이트,
   오늘 벌써 <strong id="dailyCountNum">0명</strong>이 맛집을 골랐어요🍽️
     </p>
 
+    <!-- ✅ 모드 선택 (상단 헤더 바로 아래) -->
+<section class="mode-section" style="margin: 10px 0 14px;">
+  <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+    <button class="mode-btn" data-mode="lunch" type="button">🍱 점심</button>
+    <button class="mode-btn" data-mode="dinner" type="button">🌙 저녁</button>
+    <button class="mode-btn" data-mode="solo" type="button">🙋‍♂️ 혼밥</button>
+    <button class="mode-btn" data-mode="team" type="button">🥂 회식</button>
+    <button class="mode-btn" data-mode="cafe" type="button">☕ 카페</button>
+  </div>
+  <p id="modeHint" style="margin:8px 0 0; color:#666; font-size:13px; text-align:center;"></p>
+</section>
+
     
       <!-- 유형 선택 영역 -->
 <section class="category-section">
@@ -172,6 +184,20 @@ Lunch Buddy는 점메추 웹 서비스, 점심 메뉴 추천 사이트,
 </section>
 
 <div id="result"></div>
+    
+    <!-- ✅ 기록/통계 -->
+<div id="historyWrap" style="margin-top:16px;">
+  <div class="card" style="text-align:left;">
+    <h2 style="font-size:16px; margin:0 0 8px;">🗓️ 최근 먹은 기록</h2>
+    <div id="historyList" style="font-size:14px; color:#333;"></div>
+    <div id="weeklyStats" style="margin-top:10px; font-size:13px; color:#666;"></div>
+    <button id="clearHistoryBtn" type="button" style="margin-top:12px; width:100%;">
+      🧹 기록 초기화
+    </button>
+  </div>
+  
+</div>
+
   </div>
 
   <!-- 추천 식당 모달 -->
