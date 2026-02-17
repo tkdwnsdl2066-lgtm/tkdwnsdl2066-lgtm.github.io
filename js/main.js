@@ -2,11 +2,44 @@ let lastPlaces = [];
 let currentList = [];
 
 /* =========================
-   ✅ 먹은 기록(NEW) - 로컬저장소 기반
+   ✅ 검색 설정
+========================= */
+const SEARCH_RADIUS_M = 1500; // ✅ 2km → 1.5km
+const MAX_PAGES = 45; // 안전장치(무한 페이지 방지)
+const SHOWN_EXCLUDE_LIMIT = 120; // ✅ 후보 100~300대에서 체감 좋음(과도한 fallback 방지)
+
+/* =========================
+   ✅ "최근 추천된 곳" 제외
+========================= */
+const SHOWN_KEY = "lb_shown_v1";
+
+function loadShownIds() {
+  try {
+    return JSON.parse(localStorage.getItem(SHOWN_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+function saveShownIds(ids) {
+  localStorage.setItem(SHOWN_KEY, JSON.stringify(ids.slice(0, 300)));
+}
+function addShown(placeId) {
+  if (!placeId) return;
+  const prev = loadShownIds();
+  if (prev[0] === placeId) return;
+  const next = [placeId, ...prev.filter((id) => id !== placeId)];
+  saveShownIds(next);
+}
+function filterOutShown(places, limit = SHOWN_EXCLUDE_LIMIT) {
+  const shown = new Set(loadShownIds().slice(0, limit));
+  const filtered = places.filter((p) => !shown.has(p.id));
+  return filtered.length ? filtered : places; // 다 제외되면 원본 사용
+}
+
+/* =========================
+   ✅ 먹은 기록 - 로컬저장소 기반
 ========================= */
 const HISTORY_KEY = "lb_history_v1";
-
-const MODE_LABEL = "🍱"; // 지금은 모드 안 씀(표시용 이모지 정도만)
 
 function loadHistory() {
   try {
@@ -15,17 +48,14 @@ function loadHistory() {
     return [];
   }
 }
-
 function saveHistory(list) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
 }
-
 function normalizeCategory(place) {
   if (!place.category_name) return "";
   const parts = place.category_name.split(">").map((s) => s.trim());
   return parts[1] || parts[0] || "";
 }
-
 function addToHistory(place) {
   const now = new Date();
   const item = {
@@ -39,8 +69,6 @@ function addToHistory(place) {
   };
 
   const history = loadHistory();
-
-  // 같은 날 같은 place_id는 중복 저장 방지
   const exists =
     item.id && history.some((h) => h.date === item.date && h.id === item.id);
   const next = exists ? history : [item, ...history];
@@ -114,9 +142,8 @@ function renderHistory() {
 }
 
 /* =========================
-   ✅ 최근 먹은 곳 "가중치 낮추기"(B안) - NEW
-   - 최근 먹은 곳은 확률을 낮추고(반복 1회)
-   - 나머지는 확률을 높임(반복 3회)
+   ✅ 최근 먹은 곳 페널티(가중치)
+   - 중복 복제 없이 weight로만 처리
 ========================= */
 function getRecentEatenIdSet(limit = 8) {
   const history = loadHistory();
@@ -127,20 +154,35 @@ function getRecentEatenIdSet(limit = 8) {
 
 function applyRecentPenalty(places, limit = 8) {
   const recentSet = getRecentEatenIdSet(limit);
-  const weighted = [];
+  return places.map((p) => ({
+    place: p,
+    weight: p.id && recentSet.has(p.id) ? 1 : 3,
+  }));
+}
 
-  for (const p of places) {
-    const isRecent = p.id && recentSet.has(p.id);
-    const repeat = isRecent ? 1 : 3;
+function weightedSampleUnique(weighted, count) {
+  const pool = weighted.slice();
+  const picked = [];
 
-    for (let i = 0; i < repeat; i++) weighted.push(p);
+  while (pool.length && picked.length < count) {
+    const total = pool.reduce((sum, x) => sum + (x.weight || 1), 0);
+    let r = Math.random() * total;
+
+    let idx = 0;
+    for (; idx < pool.length; idx++) {
+      r -= (pool[idx].weight || 1);
+      if (r <= 0) break;
+    }
+
+    const chosen = pool.splice(Math.min(idx, pool.length - 1), 1)[0];
+    if (chosen?.place) picked.push(chosen.place);
   }
 
-  return weighted;
+  return picked;
 }
 
 /* =========================
-   일일 이용자 수 카운터 (오전 9시 초기화)
+   ✅ 일일 이용자 수 카운터 (오전 9시 초기화)
 ========================= */
 const COUNT_KEY = "lunchBuddyDailyCount";
 const RESET_KEY = "lunchBuddyLastReset";
@@ -241,21 +283,18 @@ function startDailyCounter() {
 }
 
 /* =========================
-   선택된 카테고리 가져오기
+   ✅ 카테고리
 ========================= */
 function getSelectedCategories() {
   const checked = document.querySelectorAll(".category-item input:checked");
   return Array.from(checked).map((cb) => cb.value);
 }
 
-/* =========================
-   카테고리 → 검색 설정 변환
-========================= */
 function getSearchConfigs(selected) {
   const configs = [];
 
   if (selected.includes("all")) {
-    configs.push({ type: "category", value: "FD6" });
+    configs.push({ type: "category", value: "FD6" }); // 음식점
     return configs;
   }
 
@@ -274,7 +313,7 @@ function getSearchConfigs(selected) {
         configs.push({ type: "keyword", value: "양식" });
         break;
       case "cafe":
-        configs.push({ type: "category", value: "CE7" });
+        configs.push({ type: "category", value: "CE7" }); // 카페
         configs.push({ type: "keyword", value: "디저트" });
         configs.push({ type: "keyword", value: "베이커리" });
         configs.push({ type: "keyword", value: "간식" });
@@ -290,7 +329,7 @@ function getSearchConfigs(selected) {
 }
 
 /* =========================
-   위치 가져오기
+   ✅ 위치 가져오기
 ========================= */
 function getMyLocation() {
   if (!navigator.geolocation) {
@@ -311,9 +350,43 @@ function getMyLocation() {
 }
 
 /* =========================
-   장소 검색
+   ✅ 카카오 Places: 모든 페이지 끝까지 수집
 ========================= */
-function searchPlaces(lat, lng) {
+function searchAllPages(ps, searchFn) {
+  return new Promise((resolve) => {
+    const all = [];
+    const seen = new Set();
+    let pageCount = 0;
+
+    const cb = (data, status, pagination) => {
+      if (status === kakao.maps.services.Status.OK && Array.isArray(data)) {
+        for (const p of data) {
+          if (p?.id && !seen.has(p.id)) {
+            seen.add(p.id);
+            all.push(p);
+          }
+        }
+      }
+
+      if (pagination && pagination.hasNextPage && pageCount < MAX_PAGES) {
+        pageCount += 1;
+        pagination.nextPage();
+        return;
+      }
+
+      resolve(all);
+    };
+
+    searchFn(cb);
+  });
+}
+
+/* =========================
+   ✅ 장소 검색 (강남역 같은 밀집지역 최적화)
+   - 1차: 9포인트(촘촘) + 작은 반경
+   - 결과가 적으면 2차로 한 번 더 확장 스캔
+========================= */
+async function searchPlaces(lat, lng) {
   const selected = getSelectedCategories();
   const configs = getSearchConfigs(selected);
 
@@ -323,36 +396,98 @@ function searchPlaces(lat, lng) {
   }
 
   const ps = new kakao.maps.services.Places();
-  let results = [];
-  let completed = 0;
 
-  configs.forEach((config) => {
-    const callback = function (data, status) {
-      if (status === kakao.maps.services.Status.OK) {
-        results = results.concat(data);
-      }
+  // ✅ 밀집지역 대응: 반경을 작게 + 포인트 촘촘히 (중복 감소 + 잘린 결과 보완)
+  const GRID_STEP_M = 650; // 촘촘한 간격(강남/홍대에서 효과 좋음)
+  const PRIMARY_RADIUS_M = 900; // 1차 반경(작게)
+  const SECONDARY_RADIUS_M = SEARCH_RADIUS_M; // 2차(설정 반경: 1.5km)
 
-      completed++;
-      if (completed === configs.length) {
-        recommendRandom(results);
-      }
-    };
+  const toLat = (meters) => meters / 111320;
+  const toLng = (meters, atLat) =>
+    meters / (111320 * Math.cos((atLat * Math.PI) / 180));
 
-    const options = {
-      location: new kakao.maps.LatLng(lat, lng),
-      radius: 1000,
-    };
-
-    if (config.type === "category") {
-      ps.categorySearch(config.value, callback, options);
-    } else {
-      ps.keywordSearch(config.value, callback, options);
+  // 3x3 (9포인트) 그리드
+  const offsets9 = [];
+  for (let gy = -1; gy <= 1; gy++) {
+    for (let gx = -1; gx <= 1; gx++) {
+      offsets9.push({ dy: gy * GRID_STEP_M, dx: gx * GRID_STEP_M });
     }
-  });
+  }
+
+  // 5포인트(센터+동서남북) 확장 스캔
+  const offsets5 = [
+    { dy: 0, dx: 0 },
+    { dy: 0, dx: 1000 },
+    { dy: 0, dx: -1000 },
+    { dy: 1000, dx: 0 },
+    { dy: -1000, dx: 0 },
+  ];
+
+  async function collectByOffsets(offsets, radius) {
+    const points = offsets.map((o) => {
+      const dLat = toLat(o.dy);
+      const dLng = toLng(o.dx, lat);
+      return { lat: lat + dLat, lng: lng + dLng };
+    });
+
+    const all = [];
+    const seen = new Set();
+
+    for (const pt of points) {
+      const options = {
+        location: new kakao.maps.LatLng(pt.lat, pt.lng),
+        radius,
+      };
+
+      const tasks = configs.map((config) => {
+        if (config.type === "category") {
+          return searchAllPages(ps, (cb) =>
+            ps.categorySearch(config.value, cb, options)
+          );
+        }
+        return searchAllPages(ps, (cb) =>
+          ps.keywordSearch(config.value, cb, options)
+        );
+      });
+
+      const lists = await Promise.all(tasks);
+      const merged = lists.flat();
+
+      for (const p of merged) {
+        if (p?.id && !seen.has(p.id)) {
+          seen.add(p.id);
+          all.push(p);
+        }
+      }
+    }
+
+    return all;
+  }
+
+  // ✅ 1차: 촘촘 그리드 + 작은 반경
+  const primary = await collectByOffsets(offsets9, PRIMARY_RADIUS_M);
+
+  // ✅ 2차: 후보가 너무 적으면 확장 스캔 한 번 더
+  // (강남역에서 80~100에 머무는 현상 개선)
+  let finalList = primary;
+  if (primary.length < 150) {
+    const secondary = await collectByOffsets(offsets5, SECONDARY_RADIUS_M);
+
+    const seen = new Set(primary.map((p) => p.id));
+    for (const p of secondary) {
+      if (p?.id && !seen.has(p.id)) {
+        seen.add(p.id);
+        finalList.push(p);
+      }
+    }
+  }
+
+  console.log("✅ 후보 식당 수(분산 스캔 후):", finalList.length);
+  recommendRandom(finalList);
 }
 
 /* =========================
-   랜덤 추천 + 리스트 생성
+   ✅ 랜덤 추천 + 리스트 생성
 ========================= */
 function recommendRandom(places) {
   if (!places.length) {
@@ -362,23 +497,33 @@ function recommendRandom(places) {
 
   lastPlaces = places;
 
-  // ✅ B안: 최근 먹은 곳 확률 낮추기
-  const weightedPlaces = applyRecentPenalty(places, 8);
+  const notShownFirst = filterOutShown(places, SHOWN_EXCLUDE_LIMIT);
+  const weighted = applyRecentPenalty(notShownFirst, 8);
 
-  currentList = pickRandomList(weightedPlaces);
-  currentList = pickTopRandom(currentList);
+  const target = Math.floor(Math.random() * 11) + 10; // 10~20
+  const count = Math.min(target, weighted.length);
+  currentList = weightedSampleUnique(weighted, count);
+
+  if (!currentList.length) {
+    alert("조건에 맞는 식당이 없어요 😢");
+    return;
+  }
+
+  const mainPlace = currentList[Math.floor(Math.random() * currentList.length)];
+  currentList = [mainPlace, ...currentList.filter((p) => p.id !== mainPlace.id)];
 
   displayPlaceList(currentList);
-
-  const mainPlace = currentList[0];
   showRecommendModal(mainPlace);
+
+  // ✅ 메인 + 리스트 전체 "추천됨" 저장(다음 추천이 더 새로움)
+  currentList.forEach((p) => addShown(p?.id));
 
   const btn = document.getElementById("actionButton");
   if (btn) btn.innerText = "내 주변 다른 맛집 찾기";
 }
 
 /* =========================
-   추천 모달
+   ✅ 추천 모달
 ========================= */
 function showRecommendModal(place) {
   const modal = document.getElementById("recommendModal");
@@ -390,7 +535,7 @@ function showRecommendModal(place) {
   const catEl = document.getElementById("modalCategory");
   const distEl = document.getElementById("modalDistance");
   const linkEl = document.getElementById("modalMapLink");
-  const eatEl = document.getElementById("modalEatBtn"); // ✅ index.html에 추가한 버튼
+  const eatEl = document.getElementById("modalEatBtn");
 
   if (nameEl) nameEl.innerText = place.place_name;
 
@@ -402,7 +547,6 @@ function showRecommendModal(place) {
   if (distEl) distEl.innerText = `거리: ${place.distance}m`;
   if (linkEl) linkEl.href = place.place_url;
 
-  // ✅ 모달에서 "먹었어요" 기록
   if (eatEl) {
     eatEl.onclick = () => {
       addToHistory(place);
@@ -419,19 +563,8 @@ function showRecommendModal(place) {
 }
 
 /* =========================
-   유틸 함수
+   ✅ 리스트 표시
 ========================= */
-function pickRandomList(places) {
-  const shuffled = [...places].sort(() => Math.random() - 0.5);
-  const count = Math.floor(Math.random() * 11) + 10; // 10~20
-  return shuffled.slice(0, Math.min(count, shuffled.length));
-}
-
-function pickTopRandom(list) {
-  const randomPlace = list[Math.floor(Math.random() * list.length)];
-  return [randomPlace, ...list.filter((p) => p.id !== randomPlace.id)];
-}
-
 function displayPlaceList(places) {
   const resultDiv = document.getElementById("result");
   if (!resultDiv) return;
@@ -457,12 +590,10 @@ function displayPlaceList(places) {
       </div>
     `;
 
-    // 카드 클릭 = 지도 열기 (기존 유지)
     card.onclick = () => {
       window.open(place.place_url, "_blank");
     };
 
-    // 버튼 클릭은 카드 클릭 막기
     const eatBtn = card.querySelector(".eat-btn");
     if (eatBtn) {
       eatBtn.onclick = (e) => {
@@ -485,7 +616,7 @@ function displayPlaceList(places) {
 }
 
 /* =========================
-   카카오 공유 (기존 유지)
+   ✅ 카카오 공유
 ========================= */
 function shareKakao(isResult = false) {
   console.log("🔥 shareKakao 호출됨 / isResult =", isResult);
@@ -530,10 +661,9 @@ function shareKakao(isResult = false) {
 }
 
 /* =========================
-   DOMContentLoaded: 이벤트 바인딩 (안전)
+   ✅ DOMContentLoaded: 이벤트 바인딩
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
-  // 카테고리 UX 제어
   const allCheckbox = document.querySelector(
     '.category-item input[value="all"]'
   );
@@ -554,7 +684,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // 기록 렌더 & 초기화
   renderHistory();
   const clearBtn = document.getElementById("clearHistoryBtn");
   if (clearBtn) {
@@ -566,23 +695,34 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // 다시 추천 버튼
   const retryBtn = document.getElementById("retryButton");
   if (retryBtn) {
     retryBtn.onclick = () => {
       if (!lastPlaces.length) return;
 
-      // ✅ 다시 추천도 B안 적용
-      const weightedPlaces = applyRecentPenalty(lastPlaces, 8);
+      const notShownFirst = filterOutShown(lastPlaces, SHOWN_EXCLUDE_LIMIT);
+      const weighted = applyRecentPenalty(notShownFirst, 8);
 
-      currentList = pickRandomList(weightedPlaces);
-      currentList = pickTopRandom(currentList);
+      const target = Math.floor(Math.random() * 11) + 10;
+      const count = Math.min(target, weighted.length);
+      currentList = weightedSampleUnique(weighted, count);
+      if (!currentList.length) return;
+
+      const mainPlace =
+        currentList[Math.floor(Math.random() * currentList.length)];
+      currentList = [
+        mainPlace,
+        ...currentList.filter((p) => p.id !== mainPlace.id),
+      ];
+
       displayPlaceList(currentList);
-      showRecommendModal(currentList[0]);
+      showRecommendModal(mainPlace);
+
+      // ✅ 다시 추천도 리스트 전체 저장
+      currentList.forEach((p) => addShown(p?.id));
     };
   }
 
-  // 버디 패널 토글
   const openBuddyBtn = document.getElementById("openBuddyBtn");
   if (openBuddyBtn) {
     openBuddyBtn.onclick = () => {
@@ -591,7 +731,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // 지정 위치 검색
   const buddySearchBtn = document.getElementById("buddySearchBtn");
   if (buddySearchBtn) {
     buddySearchBtn.onclick = () => {
@@ -617,6 +756,5 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // 카운터 시작
   startDailyCounter();
 });
