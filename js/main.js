@@ -2,6 +2,42 @@ let lastPlaces = [];
 let currentList = [];
 
 /* =========================
+   ✅ 검색 설정 (여기만 바꾸면 반경 변경 가능)
+========================= */
+const SEARCH_RADIUS_M = 2000; // ✅ 1km(1000) → 2km(2000)
+const MAX_PAGES = 45; // 안전장치(무한 페이지 방지)
+
+/* =========================
+   ✅ "최근 추천된 곳"은 잠깐 제외 (NEW)
+   - "다른 맛집 버디하기" 눌렀을 때 계속 같은 곳 반복 방지
+   - 먹은 기록(History)과는 별개로, "추천된 곳"을 저장
+========================= */
+const SHOWN_KEY = "lb_shown_v1";
+
+function loadShownIds() {
+  try {
+    return JSON.parse(localStorage.getItem(SHOWN_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+function saveShownIds(ids) {
+  localStorage.setItem(SHOWN_KEY, JSON.stringify(ids.slice(0, 300)));
+}
+function addShown(placeId) {
+  if (!placeId) return;
+  const prev = loadShownIds();
+  if (prev[0] === placeId) return;
+  const next = [placeId, ...prev.filter((id) => id !== placeId)];
+  saveShownIds(next);
+}
+function filterOutShown(places, limit = 30) {
+  const shown = new Set(loadShownIds().slice(0, limit));
+  const filtered = places.filter((p) => !shown.has(p.id));
+  return filtered.length ? filtered : places; // 전부 제외되면 원본 사용
+}
+
+/* =========================
    ✅ 먹은 기록(NEW) - 로컬저장소 기반
 ========================= */
 const HISTORY_KEY = "lb_history_v1";
@@ -137,6 +173,41 @@ function applyRecentPenalty(places, limit = 8) {
   }
 
   return weighted;
+}
+
+/* =========================
+   ✅ 카카오 Places: 모든 페이지(=pagination) 끝까지 수집 (NEW)
+   - 기존: 1페이지만 받아서 후보가 적어 추천이 제한적
+   - 개선: nextPage()로 끝까지 모아서 후보 풀 확장
+========================= */
+function searchAllPages(ps, searchFn) {
+  return new Promise((resolve) => {
+    const all = [];
+    const seen = new Set();
+    let pageCount = 0;
+
+    const cb = (data, status, pagination) => {
+      if (status === kakao.maps.services.Status.OK && Array.isArray(data)) {
+        for (const p of data) {
+          if (p?.id && !seen.has(p.id)) {
+            seen.add(p.id);
+            all.push(p);
+          }
+        }
+      }
+
+      // ✅ 다음 페이지
+      if (pagination && pagination.hasNextPage && pageCount < MAX_PAGES) {
+        pageCount += 1;
+        pagination.nextPage();
+        return;
+      }
+
+      resolve(all);
+    };
+
+    searchFn(cb);
+  });
 }
 
 /* =========================
@@ -311,9 +382,9 @@ function getMyLocation() {
 }
 
 /* =========================
-   장소 검색
+   장소 검색 (✅ pagination 전체 수집 + ✅ 2km 반경 적용)
 ========================= */
-function searchPlaces(lat, lng) {
+async function searchPlaces(lat, lng) {
   const selected = getSelectedCategories();
   const configs = getSearchConfigs(selected);
 
@@ -323,32 +394,37 @@ function searchPlaces(lat, lng) {
   }
 
   const ps = new kakao.maps.services.Places();
-  let results = [];
-  let completed = 0;
+  const options = {
+    location: new kakao.maps.LatLng(lat, lng),
+    radius: SEARCH_RADIUS_M, // ✅ 2km 적용
+  };
 
-  configs.forEach((config) => {
-    const callback = function (data, status) {
-      if (status === kakao.maps.services.Status.OK) {
-        results = results.concat(data);
-      }
-
-      completed++;
-      if (completed === configs.length) {
-        recommendRandom(results);
-      }
-    };
-
-    const options = {
-      location: new kakao.maps.LatLng(lat, lng),
-      radius: 1000,
-    };
-
+  // ✅ 각 config(키워드/카테고리)마다 페이지 끝까지 수집 후 합치기
+  const tasks = configs.map((config) => {
     if (config.type === "category") {
-      ps.categorySearch(config.value, callback, options);
-    } else {
-      ps.keywordSearch(config.value, callback, options);
+      return searchAllPages(ps, (cb) =>
+        ps.categorySearch(config.value, cb, options)
+      );
     }
+    return searchAllPages(ps, (cb) =>
+      ps.keywordSearch(config.value, cb, options)
+    );
   });
+
+  const lists = await Promise.all(tasks);
+  const merged = lists.flat();
+
+  // ✅ 최종 중복 제거(안전)
+  const seen = new Set();
+  const unique = [];
+  for (const p of merged) {
+    if (p?.id && !seen.has(p.id)) {
+      seen.add(p.id);
+      unique.push(p);
+    }
+  }
+
+  recommendRandom(unique);
 }
 
 /* =========================
@@ -362,8 +438,11 @@ function recommendRandom(places) {
 
   lastPlaces = places;
 
-  // ✅ B안: 최근 먹은 곳 확률 낮추기
-  const weightedPlaces = applyRecentPenalty(places, 8);
+  // ✅ 최근 '추천된' 곳은 잠깐 제외 (반복 방지)
+  const notShownFirst = filterOutShown(places, 30);
+
+  // ✅ B안: 최근 먹은 곳 확률 낮추기(가중치)
+  const weightedPlaces = applyRecentPenalty(notShownFirst, 8);
 
   currentList = pickRandomList(weightedPlaces);
   currentList = pickTopRandom(currentList);
@@ -372,6 +451,9 @@ function recommendRandom(places) {
 
   const mainPlace = currentList[0];
   showRecommendModal(mainPlace);
+
+  // ✅ 이번에 추천된 메인 place는 "추천됨"으로 저장
+  addShown(mainPlace?.id);
 
   const btn = document.getElementById("actionButton");
   if (btn) btn.innerText = "내 주변 다른 맛집 찾기";
@@ -390,7 +472,7 @@ function showRecommendModal(place) {
   const catEl = document.getElementById("modalCategory");
   const distEl = document.getElementById("modalDistance");
   const linkEl = document.getElementById("modalMapLink");
-  const eatEl = document.getElementById("modalEatBtn"); // ✅ index.html에 추가한 버튼
+  const eatEl = document.getElementById("modalEatBtn");
 
   if (nameEl) nameEl.innerText = place.place_name;
 
@@ -457,7 +539,7 @@ function displayPlaceList(places) {
       </div>
     `;
 
-    // 카드 클릭 = 지도 열기 (기존 유지)
+    // 카드 클릭 = 지도 열기
     card.onclick = () => {
       window.open(place.place_url, "_blank");
     };
@@ -572,13 +654,16 @@ document.addEventListener("DOMContentLoaded", () => {
     retryBtn.onclick = () => {
       if (!lastPlaces.length) return;
 
-      // ✅ 다시 추천도 B안 적용
-      const weightedPlaces = applyRecentPenalty(lastPlaces, 8);
+      // ✅ 최근 '추천된' 곳 제외 → 먹은 기록 페널티 가중치 적용
+      const notShownFirst = filterOutShown(lastPlaces, 30);
+      const weightedPlaces = applyRecentPenalty(notShownFirst, 8);
 
       currentList = pickRandomList(weightedPlaces);
       currentList = pickTopRandom(currentList);
       displayPlaceList(currentList);
       showRecommendModal(currentList[0]);
+
+      addShown(currentList[0]?.id);
     };
   }
 
