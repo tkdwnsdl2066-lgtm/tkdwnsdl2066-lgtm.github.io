@@ -381,9 +381,6 @@ function searchAllPages(ps, searchFn) {
   });
 }
 
-/* =========================
-   ✅ 장소 검색 (pagination 전체 수집 + 2km 반경)
-========================= */
 async function searchPlaces(lat, lng) {
   const selected = getSelectedCategories();
   const configs = getSearchConfigs(selected);
@@ -394,39 +391,63 @@ async function searchPlaces(lat, lng) {
   }
 
   const ps = new kakao.maps.services.Places();
-  const options = {
-    location: new kakao.maps.LatLng(lat, lng),
-    radius: SEARCH_RADIUS_M,
-  };
 
-  const tasks = configs.map((config) => {
-    if (config.type === "category") {
-      return searchAllPages(ps, (cb) =>
-        ps.categorySearch(config.value, cb, options)
-      );
-    }
-    return searchAllPages(ps, (cb) =>
-      ps.keywordSearch(config.value, cb, options)
-    );
+  // 중심 + 동서남북 4지점
+  const km = 1000;
+  const offsets = [
+    { dy: 0, dx: 0 },
+    { dy: 0, dx: km },
+    { dy: 0, dx: -km },
+    { dy: km, dx: 0 },
+    { dy: -km, dx: 0 },
+  ];
+
+  const toLat = (meters) => meters / 111320;
+  const toLng = (meters, atLat) =>
+    meters / (111320 * Math.cos((atLat * Math.PI) / 180));
+
+  const points = offsets.map((o) => {
+    const dLat = toLat(o.dy);
+    const dLng = toLng(o.dx, lat);
+    return { lat: lat + dLat, lng: lng + dLng };
   });
 
-  const lists = await Promise.all(tasks);
-  const merged = lists.flat();
-
-  // 최종 중복 제거
+  const allResults = [];
   const seen = new Set();
-  const unique = [];
-  for (const p of merged) {
-    if (p?.id && !seen.has(p.id)) {
-      seen.add(p.id);
-      unique.push(p);
+
+  for (const pt of points) {
+    const options = {
+      location: new kakao.maps.LatLng(pt.lat, pt.lng),
+      radius: SEARCH_RADIUS_M,
+    };
+
+    const tasks = configs.map((config) => {
+      if (config.type === "category") {
+        return searchAllPages(ps, (cb) =>
+          ps.categorySearch(config.value, cb, options)
+        );
+      }
+      return searchAllPages(ps, (cb) =>
+        ps.keywordSearch(config.value, cb, options)
+      );
+    });
+
+    const lists = await Promise.all(tasks);
+    const merged = lists.flat();
+
+    for (const p of merged) {
+      if (p?.id && !seen.has(p.id)) {
+        seen.add(p.id);
+        allResults.push(p);
+      }
     }
   }
 
-  console.log("✅ 후보 식당 수(중복 제거 후):", unique.length);
+  console.log("✅ 후보 식당 수(분산 스캔 후):", allResults.length);
 
-  recommendRandom(unique);
+  recommendRandom(allResults);
 }
+
 
 /* =========================
    ✅ 랜덤 추천 + 리스트 생성
