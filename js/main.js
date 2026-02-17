@@ -4,9 +4,9 @@ let currentList = [];
 /* =========================
    ✅ 검색 설정
 ========================= */
-const SEARCH_RADIUS_M = 2000; // 2km
-const MAX_PAGES = 45; // 무한 페이지 방지
-const SHOWN_EXCLUDE_LIMIT = 120; // ✅ 후보 100~200대일 때 체감 최적(과도한 fallback 방지)
+const SEARCH_RADIUS_M = 1500; // ✅ 2km → 1.5km
+const MAX_PAGES = 45; // 안전장치(무한 페이지 방지)
+const SHOWN_EXCLUDE_LIMIT = 120; // ✅ 후보 100~300대에서 체감 좋음(과도한 fallback 방지)
 
 /* =========================
    ✅ "최근 추천된 곳" 제외
@@ -33,7 +33,7 @@ function addShown(placeId) {
 function filterOutShown(places, limit = SHOWN_EXCLUDE_LIMIT) {
   const shown = new Set(loadShownIds().slice(0, limit));
   const filtered = places.filter((p) => !shown.has(p.id));
-  return filtered.length ? filtered : places;
+  return filtered.length ? filtered : places; // 다 제외되면 원본 사용
 }
 
 /* =========================
@@ -109,6 +109,7 @@ function renderHistory() {
     })
     .join("");
 
+  // 최근 7일 통계
   const today = new Date();
   const weekAgo = new Date(today);
   weekAgo.setDate(today.getDate() - 6);
@@ -142,6 +143,7 @@ function renderHistory() {
 
 /* =========================
    ✅ 최근 먹은 곳 페널티(가중치)
+   - 중복 복제 없이 weight로만 처리
 ========================= */
 function getRecentEatenIdSet(limit = 8) {
   const history = loadHistory();
@@ -292,7 +294,7 @@ function getSearchConfigs(selected) {
   const configs = [];
 
   if (selected.includes("all")) {
-    configs.push({ type: "category", value: "FD6" });
+    configs.push({ type: "category", value: "FD6" }); // 음식점
     return configs;
   }
 
@@ -311,7 +313,7 @@ function getSearchConfigs(selected) {
         configs.push({ type: "keyword", value: "양식" });
         break;
       case "cafe":
-        configs.push({ type: "category", value: "CE7" });
+        configs.push({ type: "category", value: "CE7" }); // 카페
         configs.push({ type: "keyword", value: "디저트" });
         configs.push({ type: "keyword", value: "베이커리" });
         configs.push({ type: "keyword", value: "간식" });
@@ -380,7 +382,9 @@ function searchAllPages(ps, searchFn) {
 }
 
 /* =========================
-   ✅ 장소 검색 (분산 스캔 9포인트 + 2km)
+   ✅ 장소 검색 (강남역 같은 밀집지역 최적화)
+   - 1차: 9포인트(촘촘) + 작은 반경
+   - 결과가 적으면 2차로 한 번 더 확장 스캔
 ========================= */
 async function searchPlaces(lat, lng) {
   const selected = getSelectedCategories();
@@ -393,62 +397,93 @@ async function searchPlaces(lat, lng) {
 
   const ps = new kakao.maps.services.Places();
 
-  const km = 1000;
-  const offsets = [
-    { dy: 0, dx: 0 },
-    { dy: 0, dx: km },
-    { dy: 0, dx: -km },
-    { dy: km, dx: 0 },
-    { dy: -km, dx: 0 },
-    { dy: km, dx: km },
-    { dy: km, dx: -km },
-    { dy: -km, dx: km },
-    { dy: -km, dx: -km },
-  ];
+  // ✅ 밀집지역 대응: 반경을 작게 + 포인트 촘촘히 (중복 감소 + 잘린 결과 보완)
+  const GRID_STEP_M = 650; // 촘촘한 간격(강남/홍대에서 효과 좋음)
+  const PRIMARY_RADIUS_M = 900; // 1차 반경(작게)
+  const SECONDARY_RADIUS_M = SEARCH_RADIUS_M; // 2차(설정 반경: 1.5km)
 
   const toLat = (meters) => meters / 111320;
   const toLng = (meters, atLat) =>
     meters / (111320 * Math.cos((atLat * Math.PI) / 180));
 
-  const points = offsets.map((o) => {
-    const dLat = toLat(o.dy);
-    const dLng = toLng(o.dx, lat);
-    return { lat: lat + dLat, lng: lng + dLng };
-  });
+  // 3x3 (9포인트) 그리드
+  const offsets9 = [];
+  for (let gy = -1; gy <= 1; gy++) {
+    for (let gx = -1; gx <= 1; gx++) {
+      offsets9.push({ dy: gy * GRID_STEP_M, dx: gx * GRID_STEP_M });
+    }
+  }
 
-  const allResults = [];
-  const seen = new Set();
+  // 5포인트(센터+동서남북) 확장 스캔
+  const offsets5 = [
+    { dy: 0, dx: 0 },
+    { dy: 0, dx: 1000 },
+    { dy: 0, dx: -1000 },
+    { dy: 1000, dx: 0 },
+    { dy: -1000, dx: 0 },
+  ];
 
-  for (const pt of points) {
-    const options = {
-      location: new kakao.maps.LatLng(pt.lat, pt.lng),
-      radius: SEARCH_RADIUS_M,
-    };
-
-    const tasks = configs.map((config) => {
-      if (config.type === "category") {
-        return searchAllPages(ps, (cb) =>
-          ps.categorySearch(config.value, cb, options)
-        );
-      }
-      return searchAllPages(ps, (cb) =>
-        ps.keywordSearch(config.value, cb, options)
-      );
+  async function collectByOffsets(offsets, radius) {
+    const points = offsets.map((o) => {
+      const dLat = toLat(o.dy);
+      const dLng = toLng(o.dx, lat);
+      return { lat: lat + dLat, lng: lng + dLng };
     });
 
-    const lists = await Promise.all(tasks);
-    const merged = lists.flat();
+    const all = [];
+    const seen = new Set();
 
-    for (const p of merged) {
+    for (const pt of points) {
+      const options = {
+        location: new kakao.maps.LatLng(pt.lat, pt.lng),
+        radius,
+      };
+
+      const tasks = configs.map((config) => {
+        if (config.type === "category") {
+          return searchAllPages(ps, (cb) =>
+            ps.categorySearch(config.value, cb, options)
+          );
+        }
+        return searchAllPages(ps, (cb) =>
+          ps.keywordSearch(config.value, cb, options)
+        );
+      });
+
+      const lists = await Promise.all(tasks);
+      const merged = lists.flat();
+
+      for (const p of merged) {
+        if (p?.id && !seen.has(p.id)) {
+          seen.add(p.id);
+          all.push(p);
+        }
+      }
+    }
+
+    return all;
+  }
+
+  // ✅ 1차: 촘촘 그리드 + 작은 반경
+  const primary = await collectByOffsets(offsets9, PRIMARY_RADIUS_M);
+
+  // ✅ 2차: 후보가 너무 적으면 확장 스캔 한 번 더
+  // (강남역에서 80~100에 머무는 현상 개선)
+  let finalList = primary;
+  if (primary.length < 150) {
+    const secondary = await collectByOffsets(offsets5, SECONDARY_RADIUS_M);
+
+    const seen = new Set(primary.map((p) => p.id));
+    for (const p of secondary) {
       if (p?.id && !seen.has(p.id)) {
         seen.add(p.id);
-        allResults.push(p);
+        finalList.push(p);
       }
     }
   }
 
-  console.log("✅ 후보 식당 수(분산 스캔 후):", allResults.length);
-  recommendRandom(allResults);
+  console.log("✅ 후보 식당 수(분산 스캔 후):", finalList.length);
+  recommendRandom(finalList);
 }
 
 /* =========================
@@ -465,7 +500,7 @@ function recommendRandom(places) {
   const notShownFirst = filterOutShown(places, SHOWN_EXCLUDE_LIMIT);
   const weighted = applyRecentPenalty(notShownFirst, 8);
 
-  const target = Math.floor(Math.random() * 11) + 10;
+  const target = Math.floor(Math.random() * 11) + 10; // 10~20
   const count = Math.min(target, weighted.length);
   currentList = weightedSampleUnique(weighted, count);
 
@@ -480,7 +515,7 @@ function recommendRandom(places) {
   displayPlaceList(currentList);
   showRecommendModal(mainPlace);
 
-  // ✅ 메인 + 리스트 전체 "추천됨" 저장
+  // ✅ 메인 + 리스트 전체 "추천됨" 저장(다음 추천이 더 새로움)
   currentList.forEach((p) => addShown(p?.id));
 
   const btn = document.getElementById("actionButton");
@@ -488,7 +523,7 @@ function recommendRandom(places) {
 }
 
 /* =========================
-   추천 모달
+   ✅ 추천 모달
 ========================= */
 function showRecommendModal(place) {
   const modal = document.getElementById("recommendModal");
@@ -528,7 +563,7 @@ function showRecommendModal(place) {
 }
 
 /* =========================
-   리스트 표시
+   ✅ 리스트 표시
 ========================= */
 function displayPlaceList(places) {
   const resultDiv = document.getElementById("result");
@@ -548,6 +583,7 @@ function displayPlaceList(places) {
     card.innerHTML = `
       <h2>${index === 0 ? "⭐ " : ""}${place.place_name} (${categoryText})</h2>
       <p>거리: ${place.distance}m</p>
+
       <div style="display:flex; gap:8px; margin-top:10px;">
         <button type="button" class="eat-btn" style="flex:1;">✅ 먹었어요</button>
         <button type="button" class="map-btn" style="flex:1;">🗺 지도</button>
@@ -580,7 +616,7 @@ function displayPlaceList(places) {
 }
 
 /* =========================
-   카카오 공유
+   ✅ 카카오 공유
 ========================= */
 function shareKakao(isResult = false) {
   console.log("🔥 shareKakao 호출됨 / isResult =", isResult);
@@ -625,7 +661,7 @@ function shareKakao(isResult = false) {
 }
 
 /* =========================
-   DOMContentLoaded: 이벤트 바인딩
+   ✅ DOMContentLoaded: 이벤트 바인딩
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
   const allCheckbox = document.querySelector(
@@ -682,7 +718,7 @@ document.addEventListener("DOMContentLoaded", () => {
       displayPlaceList(currentList);
       showRecommendModal(mainPlace);
 
-      // ✅ 다시 추천도 리스트 전체 "추천됨" 저장
+      // ✅ 다시 추천도 리스트 전체 저장
       currentList.forEach((p) => addShown(p?.id));
     };
   }
