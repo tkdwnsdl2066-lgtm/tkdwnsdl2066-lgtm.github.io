@@ -40,8 +40,9 @@ function addToHistory(place) {
 
   const history = loadHistory();
 
-  // 같은 날 같은 place_id는 중복 저장 방지(원하면 제거 가능)
-  const exists = item.id && history.some((h) => h.date === item.date && h.id === item.id);
+  // 같은 날 같은 place_id는 중복 저장 방지
+  const exists =
+    item.id && history.some((h) => h.date === item.date && h.id === item.id);
   const next = exists ? history : [item, ...history];
 
   saveHistory(next.slice(0, 50));
@@ -51,12 +52,12 @@ function addToHistory(place) {
 function renderHistory() {
   const listEl = document.getElementById("historyList");
   const statEl = document.getElementById("weeklyStats");
-  if (!listEl || !statEl) return; // UI가 없으면 그냥 패스
+  if (!listEl || !statEl) return;
 
   const history = loadHistory();
 
   if (!history.length) {
-    listEl.innerHTML = `<p style="margin:0; color:#666;">아직 기록이 없어요. 리스트에서 <strong>먹었어요</strong>를 눌러보세요!</p>`;
+    listEl.innerHTML = `<p style="margin:0; color:#666;">아직 기록이 없어요. 리스트/모달에서 <strong>먹었어요</strong>를 눌러보세요!</p>`;
     statEl.innerHTML = "";
     return;
   }
@@ -67,7 +68,9 @@ function renderHistory() {
       const cat = h.category ? ` · ${h.category}` : "";
       const dist = h.distance ? ` · ${h.distance}m` : "";
       const link = h.url
-        ? `<a href="go.html?url=${encodeURIComponent(h.url)}" target="_blank" style="margin-left:6px;">지도</a>`
+        ? `<a href="go.html?url=${encodeURIComponent(
+            h.url
+          )}" target="_blank" style="margin-left:6px;">지도</a>`
         : "";
       return `<div style="padding:6px 0; border-bottom:1px solid #eee;">
         <strong>${h.name}</strong>${cat}${dist}
@@ -94,14 +97,46 @@ function renderHistory() {
     byCat[k] = (byCat[k] || 0) + 1;
   });
 
-  const top = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const top = Object.entries(byCat)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
 
   statEl.innerHTML = `
     <div><strong>📊 최근 7일 통계</strong></div>
     <div style="margin-top:6px;">
-      ${top.length ? top.map(([k, v]) => `• ${k}: ${v}회`).join("<br/>") : "• 데이터가 부족해요"}
+      ${
+        top.length
+          ? top.map(([k, v]) => `• ${k}: ${v}회`).join("<br/>")
+          : "• 데이터가 부족해요"
+      }
     </div>
   `;
+}
+
+/* =========================
+   ✅ 최근 먹은 곳 "가중치 낮추기"(B안) - NEW
+   - 최근 먹은 곳은 확률을 낮추고(반복 1회)
+   - 나머지는 확률을 높임(반복 3회)
+========================= */
+function getRecentEatenIdSet(limit = 8) {
+  const history = loadHistory();
+  const ids = history.map((h) => h.id).filter(Boolean);
+  const unique = Array.from(new Set(ids)).slice(0, limit);
+  return new Set(unique);
+}
+
+function applyRecentPenalty(places, limit = 8) {
+  const recentSet = getRecentEatenIdSet(limit);
+  const weighted = [];
+
+  for (const p of places) {
+    const isRecent = p.id && recentSet.has(p.id);
+    const repeat = isRecent ? 1 : 3;
+
+    for (let i = 0; i < repeat; i++) weighted.push(p);
+  }
+
+  return weighted;
 }
 
 /* =========================
@@ -327,7 +362,10 @@ function recommendRandom(places) {
 
   lastPlaces = places;
 
-  currentList = pickRandomList(places);
+  // ✅ B안: 최근 먹은 곳 확률 낮추기
+  const weightedPlaces = applyRecentPenalty(places, 8);
+
+  currentList = pickRandomList(weightedPlaces);
   currentList = pickTopRandom(currentList);
 
   displayPlaceList(currentList);
@@ -352,6 +390,7 @@ function showRecommendModal(place) {
   const catEl = document.getElementById("modalCategory");
   const distEl = document.getElementById("modalDistance");
   const linkEl = document.getElementById("modalMapLink");
+  const eatEl = document.getElementById("modalEatBtn"); // ✅ index.html에 추가한 버튼
 
   if (nameEl) nameEl.innerText = place.place_name;
 
@@ -362,6 +401,14 @@ function showRecommendModal(place) {
   if (catEl) catEl.innerText = categoryText;
   if (distEl) distEl.innerText = `거리: ${place.distance}m`;
   if (linkEl) linkEl.href = place.place_url;
+
+  // ✅ 모달에서 "먹었어요" 기록
+  if (eatEl) {
+    eatEl.onclick = () => {
+      addToHistory(place);
+      alert("기록했어요! 📝 (아래 최근 기록에서 확인 가능)");
+    };
+  }
 
   modal.style.display = "block";
 
@@ -487,12 +534,17 @@ function shareKakao(isResult = false) {
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
   // 카테고리 UX 제어
-  const allCheckbox = document.querySelector('.category-item input[value="all"]');
-  const otherCheckboxes = document.querySelectorAll('.category-item input:not([value="all"])');
+  const allCheckbox = document.querySelector(
+    '.category-item input[value="all"]'
+  );
+  const otherCheckboxes = document.querySelectorAll(
+    '.category-item input:not([value="all"])'
+  );
 
   if (allCheckbox) {
     allCheckbox.addEventListener("change", () => {
-      if (allCheckbox.checked) otherCheckboxes.forEach((cb) => (cb.checked = false));
+      if (allCheckbox.checked)
+        otherCheckboxes.forEach((cb) => (cb.checked = false));
     });
   }
 
@@ -519,7 +571,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (retryBtn) {
     retryBtn.onclick = () => {
       if (!lastPlaces.length) return;
-      currentList = pickRandomList(lastPlaces);
+
+      // ✅ 다시 추천도 B안 적용
+      const weightedPlaces = applyRecentPenalty(lastPlaces, 8);
+
+      currentList = pickRandomList(weightedPlaces);
       currentList = pickTopRandom(currentList);
       displayPlaceList(currentList);
       showRecommendModal(currentList[0]);
